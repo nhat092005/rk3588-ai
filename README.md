@@ -16,3 +16,5 @@ Planned layout (nothing migrated yet):
 | `scripts/`, `tests/` | Helper scripts and tests |
 
 Shared pre/post-processing lives in `rk3588-common`, not here.
+
+Run from the `rk3588` meta-repo checkout. This repo does not contain a copy of `rk3588-common`, the meta-repo pins it.
