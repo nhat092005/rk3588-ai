@@ -1,0 +1,85 @@
+{
+  "protocol_version": "v1",
+  "protocol": {
+    "input": "LetterBox 640x640, rect=False, scaleup=False, center, pad 114",
+    "conf": 0.001,
+    "iou": 0.7,
+    "max_det": 300,
+    "multi_label": true
+  },
+  "repos": {
+    "ai": {
+      "commit": "d943f0551d01dc15f9536f6f8f2ea6ef9877610f",
+      "dirty": false
+    },
+    "common": {
+      "commit": "5b737d635f12814f915804e828749cfa026635d6",
+      "dirty": false
+    }
+  },
+  "ultralytics_version": "8.4.154",
+  "torch_version": "2.4.0+cu124",
+  "eval_set": "css_test",
+  "dataset": "ppe5",
+  "split": "test",
+  "n_images": 82,
+  "classes": [
+    "Helmet",
+    "NoHelmet",
+    "NoVest",
+    "Vest",
+    "Person"
+  ],
+  "dataset_fingerprint": "480dd0fabae6ac1f5ebfa5e171fe4ce650ba30624ddedf93cad4f86d32bd1f12",
+  "precision": 0.766,
+  "recall": 0.6713,
+  "map50": 0.6965,
+  "map50_95": 0.3675,
+  "per_class": {
+    "Helmet": {
+      "precision": 0.6177,
+      "recall": 0.7455,
+      "ap50": 0.7249,
+      "ap50_95": 0.3412,
+      "instances": 110
+    },
+    "NoHelmet": {
+      "precision": 0.6794,
+      "recall": 0.5366,
+      "ap50": 0.4632,
+      "ap50_95": 0.2277,
+      "instances": 41
+    },
+    "NoVest": {
+      "precision": 0.8562,
+      "recall": 0.6615,
+      "ap50": 0.7213,
+      "ap50_95": 0.3826,
+      "instances": 90
+    },
+    "Vest": {
+      "precision": 0.8708,
+      "recall": 0.7213,
+      "ap50": 0.8254,
+      "ap50_95": 0.4698,
+      "instances": 61
+    },
+    "Person": {
+      "precision": 0.8059,
+      "recall": 0.6918,
+      "ap50": 0.7481,
+      "ap50_95": 0.4161,
+      "instances": 174
+    }
+  },
+  "run_id": "_calibcheck",
+  "model_file": "weights/rknn_int8/best-rk3588.rknn",
+  "model_sha256": "682b61b2c3cea5e00f7da61e85587c50052eb42d9c95de0dec820c189359b22a",
+  "backend": "rknnlite-on-board",
+  "sdk_version": "==============================================\nRKNN VERSION:\n  API: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)\n  DRV: 0.9.8\n==============================================\n",
+  "board_dump": {
+    "created_at": "2026-11-13T14:59:02",
+    "kept_anchors": 11255,
+    "normalized_boxes": true
+  }
+}
