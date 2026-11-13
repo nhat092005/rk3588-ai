@@ -6,9 +6,10 @@ PC side of PPE detection on RK3588: datasets, training, export, evaluation, and 
 |---|---|---|
 | `ai/paths.py` | Every path of this repo (`data/`, `experiments/`, `results/`) | Migrated |
 | `ai/core/` | `dataset.py` (dataset.yaml lookup), `trainer.py` (Ultralytics train), `evaluator.py` (Evaluation Protocol v1), `backends.py` (PyTorch/ONNX, RKNN board dump), `provenance.py` (repo states of ai and common) | Migrated |
-| `ai/core/rknn/` | RKNN export, calibration, tier-1 benchmark | Planned (step 6) |
-| `ai/models/` | One folder per model | Planned (step 6) |
-| `ai/automation/` | Training and evaluation pipeline, configs, reports, PC benches | Planned (step 7) |
+| `ai/core/rknn/` | `baseline.py` (Ultralytics RKNN and ONNX export), `hybrid.py` (hybrid INT8 recipes, h5 standard), `calibration.py` (calibration sampling, letterboxed PNG through `rk3588_common.model_io.preprocess`), `benchmark.py` (tier-1 `eval_perf`/`eval_memory` from the PC) | Migrated |
+| `ai/models/` | One folder per model (`yolov8n_baseline`), see `ai/models/README.md` | Migrated |
+| `ai/automation/configs/` | Run configs (`ppe5_yolov8n_baseline`, `_200ep`) | Migrated |
+| `ai/automation/` (code) | Training and evaluation pipeline, reports, PC benches | Planned (step 7) |
 | `ai/board/` | Research harness that runs on the board (tier-2 bench, NPU dump) | Planned (step 7) |
 | `ai/research/`, `ai/npu/` | Research lines and NPU studies | Migrated on demand, closed ones stay in `legacy-final` |
 | `experiments/`, `results/` | Measurements produced by this repo | Planned (step 8) |
@@ -23,4 +24,4 @@ Work from the `rk3588` meta-repo checkout (it pins `rk3588-common` and holds the
 
 ## Tests
 
-`../.venv/bin/python -m pytest tests`. `tests/test_core.py` checks `ai.core` against fixtures written once by `tests/make_fixtures.py` with the legacy code at tag `legacy-final` (see its docstring).
+`../.venv/bin/python -m pytest tests`. `tests/test_core.py` and `tests/test_rknn.py` check `ai.core` against fixtures written once by `tests/make_fixtures.py` with the legacy code at tag `legacy-final` (see its docstring). Real inputs from legacy: an `eval_perf` debug output and the step-1 quantization cfg of the SiLU baseline. `tests/test_models.py` checks every config against its model folder.
