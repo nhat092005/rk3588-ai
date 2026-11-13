@@ -35,7 +35,6 @@ analysis scripts in the `script` column (mostly `ai/npu/<topic>/`).
 | `ai/automation/report/compare_train_sets.py` | Comparison of training sets (ppe5, ppe4, ppe2286, ppe5_plus) on common test sets |
 | `ai/core/rknn/{deploy,split_head,qat_split,blocks}.py`, `ai/board/probe/{probe_runtime,split_gate}.py`, `ai/board/bench/{bench_decode,bench_throughput_rep}.py`, `ai/board/bench/rknn_perf_bench.c` | Split head, QAT, per-block and decode studies |
 | `ai/board/app/`, `scripts/demo/` | Camera app and demos (product app: `rk3588-deploy` by the roles of `STANDARDS.md`) |
-| `ai/core/provenance.py:log_experiment` | Row writer of `experiments/index.csv` (no wave 1 caller) |
 | `scripts/data/prepare_{ppe2286,ppe4,ppe5_plus}.py`, `scripts/data/common.py` | Datasets `ppe2286` (processed), `ppe4`, `ppe5_plus` |
 | `scripts/archive/`, `scripts/npu/` | Archive helpers, RKNN build log analysis |
 
@@ -50,4 +49,5 @@ Moved elsewhere: `ai/board/common.py` and `ai/board/split_decode.py` to `rk3588_
 | `data/ppe5/processed` | Rebuilt by `make prepare-data DATASET=ppe5`: labels byte-identical, fingerprints of `css_test` and `ppe2286_ext` equal to legacy, relative links, no `path:` |
 | `data/ppe2286/processed`, `data/ppe4`, `data/ppe5_plus`, `data/demo` | Not migrated |
 | `experiments/runs/ppe5_yolov8n_baseline_100ep_s0` | `best.pt`, `config.yaml`, `args.yaml` (paths made relative), `metrics.csv`, with `imported.json` (sha256 of the legacy files) |
-| the other 33 runs, `experiments/leaderboards/`, `experiments/index.csv`, `experiments/golden/` | Not migrated; leaderboard and index start empty |
+| the other 33 runs, `experiments/leaderboards/`, `experiments/golden/` | Not migrated; the leaderboard starts empty |
+| `experiments/index.csv`, `ai/core/provenance.py:log_experiment` | Dropped: it repeated what the experiment directory and the provenance of its result files already hold (meta-repo `STANDARDS.md`, section 3) |
