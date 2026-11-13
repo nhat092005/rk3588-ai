@@ -5,7 +5,7 @@
   "trained_at": {
     "commit": "33212040b359cc514ecbc1aef3aae5ef4017ea3e",
     "dirty": true,
-    "note": "legacy git_commit.txt; this commit predates the 2026-11-10 legacy history rewrite and is not reachable from legacy-final"
+    "note": "legacy git_commit.txt; this commit is not in the legacy repo objects and not in legacy experiments/commit_map.tsv"
   },
   "files_sha256": {
     "weights/best.pt": "193efa392540a21336cdf1f8e53ca6477e6f867806ee9cfb2e1d833fe25287a2",

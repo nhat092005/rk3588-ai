@@ -11,5 +11,6 @@ data/**
 # JSON stay tracked.
 experiments/runs/*/weights/
 experiments/runs/*/logs/
+experiments/golden/logs/
 experiments/runs/*/plots/sample_predictions/
 experiments/**/*.onnx
