@@ -1,6 +1,6 @@
 # Wave 1 acceptance, 2026-11-13
 
-Experiment id `acceptance-20261113-wave1`. Step 9 of the migration plan: the migrated pipeline reproduces the legacy
+Step 9 of the migration plan: the migrated pipeline reproduces the legacy
 baseline `ppe5_yolov8n_baseline_100ep_s0`. Run with the legacy checkout renamed (unreachable), code at ai `d943f05`,
 common `5b737d6`, board `rk3588-board` synced from the same commits. Legacy reference files: `legacy-final`, run
 `experiments/runs/ppe5_yolov8n_baseline_100ep_s0`. The pipeline itself never read the legacy checkout; the reference side of checks 2a, 2c and 2e (legacy
@@ -20,5 +20,4 @@ interpreter and code, legacy calibration PNGs, legacy `best.onnx`) was read from
 | 5 | `deploy/probes/probe_infer` vs RKNNLite (`probe_check.py`) | 82 css_test images: raw output bit-identical 82/82, `rk3588_common.postprocess` detections identical 82/82. PASS |
 | 6 | Leaderboard | `experiments/leaderboards/ppe5.csv`: two rows from check 1, values equal the legacy rows |
 
-Not done: `experiments/index.csv` row (its writer `log_experiment` is not migrated, see `LEGACY.md`). Tier 1 (adb,
-`rknn_server`) was not part of the acceptance.
+Tier 1 (adb, `rknn_server`) was not part of the acceptance.

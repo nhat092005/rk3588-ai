@@ -1,8 +1,8 @@
 """Hybrid INT8 builds: named tensors stay float16, the rest INT8.
 
-Recipe h5 is the project standard; the others were used in the phase 2c
-diagnosis. Tensor names match the step-1 quantization cfg of
-RKNN-Toolkit2 2.3.2 for the Ultralytics YOLOv8n detect graph with
+Recipe h5 is the project standard; the others were used to diagnose
+the INT8 accuracy loss. Tensor names match the step-1 quantization cfg
+of RKNN-Toolkit2 2.3.2 for the Ultralytics YOLOv8n detect graph with
 normalized box coordinates.
 """
 

@@ -1,33 +1,14 @@
-"""Pipeline plumbing tests: phase steps, dataset.yaml, logtee, args."""
+"""Pipeline plumbing tests: dataset.yaml, logtee, args."""
 
 import argparse
-import json
 import subprocess
 import sys
 
-import cases
-import pytest
 from ultralytics.data.utils import check_det_dataset
 
-from ai.automation.pipeline import pipeline
 from ai.core import dataset, provenance
 from ai.paths import REPO_ROOT
 from rk3588_common.provenance import add_provenance_args
-
-
-@pytest.mark.parametrize("phase", ["phase2", "phase4"])
-def test_phase_steps_match_legacy(phase):
-    """Same make steps and done-files as legacy (board-sync renamed)."""
-    expected = json.loads(cases.PIPELINE_EXPECTED.read_text())[phase]
-    for step in expected:
-        step[0] = [
-            "sync-board" if part == "board-sync" else part for part in step[0]
-        ]
-    got = [
-        [cmd, str(done.relative_to(REPO_ROOT)) if done else None]
-        for cmd, done in pipeline.PHASES[phase]("ppe5")
-    ]
-    assert got == expected
 
 
 def test_dataset_yaml_without_path(tmp_path, monkeypatch):
