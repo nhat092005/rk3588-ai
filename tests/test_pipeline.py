@@ -84,3 +84,26 @@ def test_board_repo_args_round_trip():
     add_provenance_args(parser)
     args = parser.parse_args(["--run-id", "r", *provenance.board_repo_args()])
     assert dict(args.repos) == provenance.code_repos()
+
+
+def test_relativize_args(tmp_path):
+    """Repo paths in args.yaml become relative, other values stay."""
+    from ai.automation.pipeline.run import relativize_args
+
+    root = tmp_path / "rk3588-ai"
+    args = tmp_path / "args.yaml"
+    args.write_text(
+        "task: detect\n"
+        f"data: {root}/data/ppe5/processed/dataset.yaml\n"
+        "model: yolov8n.pt\n"
+        f"project: {root}/experiments/runs\n"
+        f"save_dir: {root}/experiments/runs/r0\n"
+    )
+    relativize_args(args, root)
+    assert args.read_text() == (
+        "task: detect\n"
+        "data: data/ppe5/processed/dataset.yaml\n"
+        "model: yolov8n.pt\n"
+        "project: experiments/runs\n"
+        "save_dir: experiments/runs/r0\n"
+    )
