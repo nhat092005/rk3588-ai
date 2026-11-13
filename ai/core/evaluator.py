@@ -15,20 +15,19 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import yaml
 from ultralytics.cfg import get_cfg
 from ultralytics.data import build_dataloader, build_yolo_dataset
 from ultralytics.utils import DEFAULT_CFG, nms
 from ultralytics.utils.metrics import DetMetrics, box_iou
 from ultralytics.utils.ops import xywh2xyxy
 
-from rk3588_common.model_io import IMGSZ, PROTOCOL_VERSION
+from rk3588_common.model_io import EVAL_CONF, IMGSZ, PROTOCOL_VERSION
 
-from .dataset import dataset_yaml_path
+from .dataset import load_dataset_yaml
 from .provenance import code_repos
 
-# Ultralytics val settings. EVAL_ names: the deployment NMS settings of rk3588_common.model_io are another contract.
-EVAL_CONF = 0.001
+# Ultralytics val settings (EVAL_CONF in rk3588_common.model_io, the board dump needs it). EVAL_ names: the deployment
+# NMS settings of rk3588_common.model_io are another contract.
 EVAL_IOU = 0.7
 EVAL_MAX_DET = 300
 # Ultralytics NMS stops early after 2 + 0.05 s per image, which would silently truncate outputs with thousands of boxes
@@ -54,10 +53,11 @@ Backend = Callable[..., torch.Tensor]  # backend(img, im_file=...)
 
 def build_eval_loader(eval_set: str):
     dataset_name, split = EVAL_SETS[eval_set]
-    data_yaml = dataset_yaml_path(dataset_name)
-    data = yaml.safe_load(data_yaml.read_text())
+    data = load_dataset_yaml(dataset_name)
     if split not in data:
-        raise KeyError(f"{data_yaml} has no '{split}' key; re-run scripts/data/prepare_{dataset_name}.py")
+        raise KeyError(
+            f"{dataset_name} dataset.yaml has no '{split}' key; re-run scripts/data/prepare_{dataset_name}.py"
+        )
     img_path = str(Path(data["path"]) / data[split])
     data["names"] = dict(enumerate(data["names"]))
     data["channels"] = 3

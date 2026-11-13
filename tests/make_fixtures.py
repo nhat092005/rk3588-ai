@@ -53,6 +53,26 @@ def main() -> None:
     np.savez_compressed(cases.CORE_EXPECTED, **out)
     print(f"wrote {cases.CORE_EXPECTED.name} ({len(out)} arrays)")
     write_rknn(legacy)
+    write_pipeline(legacy)
+
+
+def write_pipeline(legacy: Path) -> None:
+    """make steps of phase2 and phase4 for ppe5 (phase3 depends on the leaderboard content)."""
+    import os
+
+    from ai.automation.pipeline import pipeline as old  # legacy-final:ai/automation/pipeline/pipeline.py
+
+    cwd = os.getcwd()
+    os.chdir(legacy)  # run_id() runs run.py --print-run-id from the repo root
+    try:
+        steps = {
+            p: [[cmd, str(done.relative_to(old.REPO_ROOT)) if done else None] for cmd, done in old.PHASES[p]("ppe5")]
+            for p in ("phase2", "phase4")
+        }
+    finally:
+        os.chdir(cwd)
+    cases.PIPELINE_EXPECTED.write_text(json.dumps(steps, indent=1) + "\n")
+    print(f"wrote {cases.PIPELINE_EXPECTED.name}")
 
 
 def git_show(legacy: Path, path: str) -> str:

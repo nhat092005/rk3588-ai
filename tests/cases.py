@@ -8,6 +8,7 @@ import yaml
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CORE_EXPECTED = FIXTURES / "core_expected.npz"
 RKNN_EXPECTED = FIXTURES / "rknn_expected.json"
+PIPELINE_EXPECTED = FIXTURES / "pipeline_expected.json"
 # Real inputs copied from legacy-final by make_fixtures.py: an eval_perf(perf_debug=True) output of the baseline INT8
 # model on CORE_0, and the tensor dtypes of the step-1 quantization cfg of the SiLU baseline (hybrid recipes).
 EVAL_PERF_TEXT = FIXTURES / "eval_perf_debug_int8_core0.txt"

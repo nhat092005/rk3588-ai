@@ -17,6 +17,8 @@ import torch
 import yaml
 from ultralytics.nn.autobackend import AutoBackend
 
+from rk3588_common.model_io import boxes_normalized
+
 
 class UltralyticsBackend:
     """PyTorch .pt or ONNX .onnx through Ultralytics AutoBackend, FP32, as model.val() runs them."""
@@ -47,10 +49,9 @@ class RknnDumpBackend:
         self.meta = json.loads(dump_path.with_suffix(".json").read_text())
         if self.meta["eval_conf"] != conf:
             raise ValueError(f"dump kept anchors above {self.meta['eval_conf']}, protocol conf is {conf}")
-        # Ultralytics INT8 RKNN export normalizes boxes by input size (engine/exporter.py
-        # _NormalizeCoords); nn/backends/rknn.py reverses it the same way.
+        # nn/backends/rknn.py of Ultralytics reverses the normalization the same way.
         meta = yaml.safe_load((Path(rknn_model_dir) / "metadata.yaml").read_text())
-        self.normalized = meta.get("args", {}).get("quantize") == 8 and not meta.get("split_head")
+        self.normalized = boxes_normalized(meta)
         with np.load(dump_path) as d:  # every d[key] access re-reads the array from the file: read once
             names, md5s, counts, idx, vals = (d[k] for k in ("names", "md5", "counts", "idx", "vals"))
             self.shape = tuple(int(x) for x in d["shape"])
