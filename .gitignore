@@ -1,2 +1,16 @@
 __pycache__/
 .pytest_cache/
+
+# Data: only the data cards are tracked. raw/ is the original download,
+# processed/ is rebuilt by scripts/data/prepare_<ds>.py.
+data/**
+!data/*/
+!data/*/DATA_CARD.md
+
+# Run outputs that are heavy or regenerable. Metrics, configs and result
+# JSON stay tracked.
+experiments/runs/*/weights/
+experiments/runs/*/logs/
+experiments/golden/logs/
+experiments/runs/*/plots/sample_predictions/
+experiments/**/*.onnx

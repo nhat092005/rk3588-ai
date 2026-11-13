@@ -13,11 +13,12 @@ PC side of PPE detection on RK3588: datasets, training, export, evaluation, and 
 | `ai/automation/report/`, `ai/automation/bench/` | `tables` (Tables A-M), `bench_gpu`, `benchmark_npu` (tier 1), `board_check` | Migrated |
 | `ai/board/` | Research harness that runs on the board: `bench/` (`bench_npu`, `bench_cpu_onnx`, `bench_throughput`, `WARMUP`), `probe/infer_dump` (NPU outputs for the evaluator) | Migrated |
 | `ai/research/`, `ai/npu/` | Research lines and NPU studies | Migrated on demand, closed ones stay in `legacy-final` |
-| `experiments/`, `results/` | Measurements produced by this repo | Planned (step 8) |
-| `data/` | Datasets (only `DATA_CARD.md` tracked) | Planned (step 8) |
+| `experiments/`, `results/` | Measurements produced by this repo. `experiments/runs/ppe5_yolov8n_baseline_100ep_s0` is imported from legacy (`imported.json`) | Migrated (baseline only) |
+| `data/` | Datasets (only `DATA_CARD.md` tracked): raw `css` and `ppe2286`, `ppe5` rebuilt by `make prepare-data DATASET=ppe5` | Migrated |
 | `scripts/` | `logtee.py` (command log with repo states), `data/prepare_ppe5.py` (ppe5 from css + ppe2286, relative links, no `path:` in dataset.yaml) | Migrated |
 | `tests/` | Equivalence tests against legacy fixtures | |
 | `Makefile` | Targets of this repo (`make help`), board settings from the meta-repo `board.mk` | Migrated |
+| `LEGACY.md` | Map of old experiment codes, code, data and runs that stayed in `legacy-final` | |
 
 Model I/O constants (`IMGSZ`, `PROTOCOL_VERSION`), pre/post-processing, telemetry and the provenance schema live in `rk3588-common`. The evaluator's own NMS settings are `EVAL_CONF`, `EVAL_IOU`, `EVAL_MAX_DET` (Ultralytics val settings), a separate contract from the deployment NMS in `rk3588_common.model_io`.
 
