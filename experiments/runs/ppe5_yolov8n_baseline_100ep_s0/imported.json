@@ -1,0 +1,17 @@
+{
+  "imported_from": "legacy-final",
+  "legacy_commit": "1bc04d368ea64267802e6df619186ada41ebb2f1",
+  "legacy_path": "experiments/runs/ppe5_yolov8n_baseline_100ep_s0",
+  "trained_at": {
+    "commit": "33212040b359cc514ecbc1aef3aae5ef4017ea3e",
+    "dirty": true,
+    "note": "legacy git_commit.txt; this commit predates the 2026-11-10 legacy history rewrite and is not reachable from legacy-final"
+  },
+  "files_sha256": {
+    "weights/best.pt": "193efa392540a21336cdf1f8e53ca6477e6f867806ee9cfb2e1d833fe25287a2",
+    "config.yaml": "e28d2d1f26a69eec89842b2a8c014138502ab0dcf7974f3a2d5bf7645db0b26f",
+    "metrics.csv": "71aec805b28b56b861d666ace970867ac693235f1e20939019ca990988166d1c",
+    "args.yaml": "6f71c9b62019bbfca5a36cccd8f2e4ed29d216a610cd0f4b62d929e77c7cbd76"
+  },
+  "args_yaml_note": "data, project and save_dir made relative to the rk3588-ai root (legacy had absolute paths); files_sha256 is of the legacy file"
+}
