@@ -1,9 +1,10 @@
 """Inference backends for ai.core.evaluator.
 
-Each backend takes a uint8 RGB NCHW batch (1, 3, 640, 640), already letterboxed
-by the evaluator, and returns raw predictions (1, 4 + nc, anchors) with xywh
-boxes in input pixels. NMS and metrics stay in the evaluator. The evaluator also passes
-im_file, used by RknnDumpBackend to look up the board result of that image.
+Each backend takes a uint8 RGB NCHW batch (1, 3, 640, 640), already
+letterboxed by the evaluator, and returns raw predictions
+(1, 4 + nc, anchors) with xywh boxes in input pixels. NMS and metrics
+stay in the evaluator. The evaluator also passes im_file, used by
+RknnDumpBackend to look up the board result of that image.
 """
 
 from __future__ import annotations
@@ -17,17 +18,25 @@ import torch
 import yaml
 from ultralytics.nn.autobackend import AutoBackend
 
+from rk3588_common.model_io import boxes_normalized
+
 
 class UltralyticsBackend:
-    """PyTorch .pt or ONNX .onnx through Ultralytics AutoBackend, FP32, as model.val() runs them."""
+    """PyTorch .pt or ONNX .onnx through Ultralytics AutoBackend."""
 
-    def __init__(self, weights: str | Path, device: str = "0"):
+    def __init__(self, weights: str | Path, device: str = "0") -> None:
+        """Load FP32 model weights onto the specified device."""
         dev = torch.device("cpu" if device == "cpu" else f"cuda:{device}")
-        self.model = AutoBackend(str(weights), device=dev, fp16=False, fuse=True, verbose=False)
+        self.model = AutoBackend(
+            str(weights), device=dev, fp16=False, fuse=True, verbose=False
+        )
         self.model.eval()
         self.device = dev
 
-    def __call__(self, img: torch.Tensor, im_file: str | None = None) -> torch.Tensor:
+    def __call__(
+        self, img: torch.Tensor, im_file: str | None = None
+    ) -> torch.Tensor:
+        """Run forward pass on uint8 NCHW batch; return CPU tensor."""
         with torch.no_grad():
             y = self.model(img.to(self.device).float() / 255)
         y = y[0] if isinstance(y, (list, tuple)) else y
@@ -35,24 +44,35 @@ class UltralyticsBackend:
 
 
 class RknnDumpBackend:
-    """.rknn outputs computed on the board NPU by ai.board.probe.infer_dump (RKNNLite).
+    """Replay .rknn outputs computed on the board NPU by infer_dump.
 
-    The dump holds, per image, the md5 of the board's input and the raw output of every anchor whose
-    best class score is > conf; this backend rebuilds the full output and refuses any image whose
-    input differs from the evaluator's input.
+    The dump holds, per image, the md5 of the board's input and the raw
+    output of every anchor whose best class score is > conf; this
+    backend rebuilds the full output and refuses any image whose input
+    differs from the evaluator's input.
     """
 
-    def __init__(self, dump_path: str | Path, rknn_model_dir: str | Path, conf: float):
+    def __init__(
+        self, dump_path: str | Path, rknn_model_dir: str | Path, conf: float
+    ) -> None:
+        """Load sparse NPU dump and verify protocol threshold."""
         dump_path = Path(dump_path)
         self.meta = json.loads(dump_path.with_suffix(".json").read_text())
         if self.meta["eval_conf"] != conf:
-            raise ValueError(f"dump kept anchors above {self.meta['eval_conf']}, protocol conf is {conf}")
-        # Ultralytics INT8 RKNN export normalizes boxes by input size (engine/exporter.py
-        # _NormalizeCoords); nn/backends/rknn.py reverses it the same way.
-        meta = yaml.safe_load((Path(rknn_model_dir) / "metadata.yaml").read_text())
-        self.normalized = meta.get("args", {}).get("quantize") == 8 and not meta.get("split_head")
-        with np.load(dump_path) as d:  # every d[key] access re-reads the array from the file: read once
-            names, md5s, counts, idx, vals = (d[k] for k in ("names", "md5", "counts", "idx", "vals"))
+            raise ValueError(
+                f"dump kept anchors above {self.meta['eval_conf']}, "
+                f"protocol conf is {conf}"
+            )
+        # Ultralytics nn/backends/rknn.py reverses norm the same way.
+        meta = yaml.safe_load(
+            (Path(rknn_model_dir) / "metadata.yaml").read_text()
+        )
+        self.normalized = boxes_normalized(meta)
+        # Every d[key] access re-reads the array from file: read once.
+        with np.load(dump_path) as d:
+            names, md5s, counts, idx, vals = (
+                d[k] for k in ("names", "md5", "counts", "idx", "vals")
+            )
             self.shape = tuple(int(x) for x in d["shape"])
         ends = np.cumsum(counts)
         self.rows = {
@@ -61,12 +81,20 @@ class RknnDumpBackend:
         }
 
     def __call__(self, img: torch.Tensor, im_file: str) -> torch.Tensor:
+        """Reconstruct dense prediction tensor for the given image."""
         name = Path(im_file).name
         if name not in self.rows:
             raise KeyError(f"{name} missing from the board dump")
         md5, idx, vals = self.rows.pop(name)
-        if hashlib.md5(np.ascontiguousarray(img[0].permute(1, 2, 0).numpy()).tobytes()).hexdigest() != md5:
-            raise ValueError(f"{name}: board input differs from the evaluator input")
+        if (
+            hashlib.md5(
+                np.ascontiguousarray(img[0].permute(1, 2, 0).numpy()).tobytes()
+            ).hexdigest()
+            != md5
+        ):
+            raise ValueError(
+                f"{name}: board input differs from the evaluator input"
+            )
         full = np.zeros(self.shape, dtype=np.float32)
         full[:, idx] = vals.T
         y = torch.from_numpy(full)[None]

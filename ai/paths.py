@@ -1,4 +1,7 @@
-"""Single source of truth for rk3588-ai paths. Scripts import locations from here, never rebuild them."""
+"""Single source of truth for rk3588-ai paths.
+
+Scripts import locations from here and never rebuild them.
+"""
 
 from pathlib import Path
 
@@ -11,6 +14,6 @@ GOLDEN_DIR = EXPERIMENTS_DIR / "golden"
 RESULTS_DIR = REPO_ROOT / "results"
 
 
-def bench_dir(run) -> Path:
-    """Pipeline outputs of a run (tier1/tier2/gpu files). run is a run_id or the run directory."""
+def bench_dir(run: str | Path) -> Path:
+    """Return bench directory of a run (given run_id or run path)."""
     return RUNS_DIR / Path(run).name / "bench"
