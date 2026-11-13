@@ -7,6 +7,12 @@ import yaml
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CORE_EXPECTED = FIXTURES / "core_expected.npz"
+RKNN_EXPECTED = FIXTURES / "rknn_expected.json"
+# Real inputs copied from legacy-final by make_fixtures.py: an eval_perf(perf_debug=True) output of the baseline INT8
+# model on CORE_0, and the tensor dtypes of the step-1 quantization cfg of the SiLU baseline (hybrid recipes).
+EVAL_PERF_TEXT = FIXTURES / "eval_perf_debug_int8_core0.txt"
+STEP1_DTYPES = FIXTURES / "step1_silu_dtypes.json"
+CALIB_SHAPES = [(640, 640), (480, 640), (1080, 1920), (200, 300), (641, 639), (429, 640), (640, 429), (3, 1000)]
 
 
 def write_dataset_files(root: Path) -> tuple[list[str], list[str]]:
@@ -62,3 +68,31 @@ def write_dump(root: Path, quantize: int, split_head: bool):
     meta = {"args": {"quantize": quantize}, **({"split_head": True} if split_head else {})}
     (root / "metadata.yaml").write_text(yaml.safe_dump(meta))
     return img
+
+
+def digest(a: np.ndarray) -> str:
+    import hashlib
+
+    return hashlib.sha256(f"{a.dtype}{a.shape}".encode() + np.ascontiguousarray(a).tobytes()).hexdigest()
+
+
+def write_calib_labels(root: Path) -> Path:
+    """80 label files over 5 classes, two objects each."""
+    root.mkdir(parents=True, exist_ok=True)
+    for i in range(80):
+        (root / f"img{i:03d}.txt").write_text(f"{i % 5} 0.5 0.5 0.1 0.1\n{(i * 3) % 5} 0.2 0.2 0.1 0.1\n")
+    return root
+
+
+def write_calib_images(root: Path) -> list[Path]:
+    """PNG sources (lossless, so both sides read the same pixels) of CALIB_SHAPES."""
+    import cv2
+
+    rng = np.random.default_rng(40)
+    root.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for i, (h, w) in enumerate(CALIB_SHAPES):
+        path = root / f"src{i}.png"
+        cv2.imwrite(str(path), rng.integers(0, 256, (h, w, 3), dtype=np.uint8))
+        paths.append(path)
+    return paths
