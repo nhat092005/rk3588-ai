@@ -1,7 +1,8 @@
 """CLI: reference latency of best.pt on the PC GPU (Table H, last row).
 
-Same pre/post-processing (rk3588_common.model_io), warmup and single pass over css_test as the
-tier-2 board scripts; only the inference step runs on the GPU (PyTorch FP32, CUDA-synchronized).
+Same pre/post-processing (rk3588_common.model_io), warmup, and single
+pass over css_test as the tier-2 board scripts; only the inference step
+runs on the GPU (PyTorch FP32, CUDA-synchronized).
 Writes runs/<run_id>/bench/gpu_pt_fp32.json.
 """
 
@@ -12,6 +13,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import cv2
+import numpy as np
 import torch
 from ultralytics.nn.autobackend import AutoBackend
 
@@ -26,6 +28,7 @@ from rk3588_common.provenance import file_sha256, provenance
 
 
 def main() -> None:
+    """Measure PC GPU FP32 reference latency and write JSON report."""
     parser = argparse.ArgumentParser()
     parser.add_argument("run_id")
     parser.add_argument("--device", default="0")
@@ -34,13 +37,15 @@ def main() -> None:
     run_dir = RUNS_DIR / args.run_id
     weights = run_dir / "weights" / "best.pt"
     dev = torch.device(f"cuda:{args.device}")
-    model = AutoBackend(str(weights), device=dev, fp16=False, fuse=True, verbose=False).eval()
+    model = AutoBackend(
+        str(weights), device=dev, fp16=False, fuse=True, verbose=False
+    ).eval()
 
     dataset, split = EVAL_SETS["css_test"]
     data = load_dataset_yaml(dataset)
     images = list_images(str(Path(data["path"]) / data[split]))
 
-    def infer(nhwc):
+    def infer(nhwc: np.ndarray) -> np.ndarray:
         x = torch.from_numpy(nhwc).to(dev).permute(0, 3, 1, 2).float() / 255
         with torch.no_grad():
             y = model(x)
@@ -80,7 +85,12 @@ def main() -> None:
         "torch_version": version("torch"),
         "n_images": len(images),
         "warmup": WARMUP,
-        "latency_ms": {"pre": summarize(pre), "inference": summarize(gpu), "post": summarize(post), "e2e": e2e_stats},
+        "latency_ms": {
+            "pre": summarize(pre),
+            "inference": summarize(gpu),
+            "post": summarize(post),
+            "e2e": e2e_stats,
+        },
         "fps_latency": round(1000 / e2e_stats["mean"], 2),
     }
     out_path = run_dir / "bench" / "gpu_pt_fp32.json"

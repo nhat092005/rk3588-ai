@@ -1,9 +1,10 @@
 """Evaluation Protocol v1: one evaluator for every model and precision.
 
-Dataset loading, LetterBox, NMS and AP come from the same Ultralytics code that
-model.val() uses, so FP32 (PyTorch/ONNX) and NPU (RKNN FP16/INT8) results differ
-only by the backend. Changing any constant below, or IMGSZ, requires a new PROTOCOL_VERSION
-(both in rk3588_common.model_io).
+Dataset loading, LetterBox, NMS, and AP come from the same Ultralytics
+code that model.val() uses, so FP32 (PyTorch/ONNX) and NPU
+(RKNN FP16/INT8) results differ only by the backend. Changing any
+constant below, or IMGSZ, requires a new PROTOCOL_VERSION (both in
+rk3588_common.model_io).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from ultralytics.cfg import get_cfg
 from ultralytics.data import build_dataloader, build_yolo_dataset
 from ultralytics.utils import DEFAULT_CFG, nms
@@ -26,52 +28,65 @@ from rk3588_common.model_io import EVAL_CONF, IMGSZ, PROTOCOL_VERSION
 from .dataset import load_dataset_yaml
 from .provenance import code_repos
 
-# Ultralytics val settings (EVAL_CONF in rk3588_common.model_io, the board dump needs it). EVAL_ names: the deployment
-# NMS settings of rk3588_common.model_io are another contract.
+# Ultralytics val settings (EVAL_CONF in rk3588_common.model_io, the
+# board dump needs it). EVAL_ names: the deployment NMS settings of
+# rk3588_common.model_io are another contract.
 EVAL_IOU = 0.7
 EVAL_MAX_DET = 300
-# Ultralytics NMS stops early after 2 + 0.05 s per image, which would silently truncate outputs with thousands of boxes
-# above EVAL_CONF (hybrid recipes h3 and h4)
+# Ultralytics NMS stops early after 2 + 0.05 s per image, which would
+# silently truncate outputs with thousands of boxes above EVAL_CONF
+# (hybrid recipes h3 and h4)
 MAX_TIME_IMG = 60.0
 IOU_THRESHOLDS = torch.linspace(0.5, 0.95, 10)
 
 # eval set name -> (prepared dataset, split key in its dataset.yaml)
 EVAL_SETS = {
-    "css_test": ("ppe5", "test"),  # common test set for every model (82 images, CSS v28 test split)
-    "ppe2286_ext": ("ppe5", "test_ext"),  # external test set (180 ppe2286 images, Person is a pseudo-label)
+    "css_test": (
+        "ppe5",
+        "test",
+    ),  # common test set for every model (82 images, CSS v28 test split)
+    "ppe2286_ext": (
+        "ppe5",
+        "test_ext",
+    ),  # external test set (180 ppe2286 images, Person is a pseudo-label)
 }
-# Eval sets reported for a model trained on each dataset. ppe5_plus, ppe2286, ppe4 and their eval sets stay in
-# legacy-final until those datasets migrate.
+# Eval sets reported for a model trained on each dataset. ppe5_plus,
+# ppe2286, ppe4 and their eval sets stay in legacy-final until migrated.
 EVAL_SETS_BY_DATASET = {
     "ppe5": ["css_test", "ppe2286_ext"],
 }
 
-# A backend maps a uint8 RGB NCHW batch (1, 3, IMGSZ, IMGSZ) and its image path to raw predictions
-# (1, 4 + nc, anchors) with xywh boxes in input pixels.
+# A backend maps a uint8 RGB NCHW batch (1, 3, IMGSZ, IMGSZ) and its
+# image path to raw predictions (1, 4 + nc, anchors) in input pixels.
 Backend = Callable[..., torch.Tensor]  # backend(img, im_file=...)
 
 
-def build_eval_loader(eval_set: str):
+def build_eval_loader(eval_set: str) -> tuple[DataLoader, dict[int, str]]:
+    """Build deterministic Ultralytics val dataloader for eval_set."""
     dataset_name, split = EVAL_SETS[eval_set]
     data = load_dataset_yaml(dataset_name)
     if split not in data:
         raise KeyError(
-            f"{dataset_name} dataset.yaml has no '{split}' key; re-run scripts/data/prepare_{dataset_name}.py"
+            f"{dataset_name} dataset.yaml has no '{split}' key; "
+            f"re-run scripts/data/prepare_{dataset_name}.py"
         )
     img_path = str(Path(data["path"]) / data[split])
     data["names"] = dict(enumerate(data["names"]))
     data["channels"] = 3
 
-    cfg = get_cfg(DEFAULT_CFG, {"imgsz": IMGSZ, "rect": False, "task": "detect", "mode": "val"})
+    cfg = get_cfg(
+        DEFAULT_CFG,
+        {"imgsz": IMGSZ, "rect": False, "task": "detect", "mode": "val"},
+    )
     dataset = build_yolo_dataset(cfg, img_path, 1, data, mode="val", stride=32)
     loader = build_dataloader(dataset, batch=1, workers=4, shuffle=False)
     return loader, data["names"]
 
 
 def dataset_fingerprint(im_files: list[str], label_files: list[str]) -> str:
-    """sha256 over image bytes and label text, in file-name order.
+    """Compute sha256 over image bytes and label text in name order.
 
-    data/** is git-ignored, so this proves which data a number was measured on.
+    data/** is git-ignored, so this proves which data was evaluated.
     """
     h = hashlib.sha256()
     for im, lb in sorted(zip(im_files, label_files, strict=True)):
@@ -81,23 +96,33 @@ def dataset_fingerprint(im_files: list[str], label_files: list[str]) -> str:
     return h.hexdigest()
 
 
-def match_predictions(pred_cls: torch.Tensor, true_cls: torch.Tensor, iou: torch.Tensor) -> np.ndarray:
-    """Greedy matching, same as BaseValidator.match_predictions (use_scipy=False)."""
+def match_predictions(
+    pred_cls: torch.Tensor, true_cls: torch.Tensor, iou: torch.Tensor
+) -> np.ndarray:
+    """Match predictions greedily like BaseValidator (no scipy)."""
     correct = np.zeros((pred_cls.shape[0], IOU_THRESHOLDS.numel()), dtype=bool)
     iou = (iou * (true_cls[:, None] == pred_cls)).cpu().numpy()
     for i, threshold in enumerate(IOU_THRESHOLDS.tolist()):
         matches = np.array(np.nonzero(iou >= threshold)).T
         if matches.shape[0]:
             if matches.shape[0] > 1:
-                matches = matches[iou[matches[:, 0], matches[:, 1]].argsort()[::-1]]
-                matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
-                matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
+                matches = matches[
+                    iou[matches[:, 0], matches[:, 1]].argsort()[::-1]
+                ]
+                matches = matches[
+                    np.unique(matches[:, 1], return_index=True)[1]
+                ]
+                matches = matches[
+                    np.unique(matches[:, 0], return_index=True)[1]
+                ]
             correct[matches[:, 1].astype(int), i] = True
     return correct
 
 
-def evaluate(backend: Backend, eval_set: str, limit: int | None = None) -> dict:
-    """Run protocol v1 on an eval set and return a JSON-serializable result."""
+def evaluate(
+    backend: Backend, eval_set: str, limit: int | None = None
+) -> dict:
+    """Run protocol v1 on eval_set and return JSON-serializable dict."""
     loader, names = build_eval_loader(eval_set)
     metrics = DetMetrics(names=names)
     im_files, label_files = [], []
@@ -119,7 +144,10 @@ def evaluate(backend: Backend, eval_set: str, limit: int | None = None) -> dict:
         )[0].cpu()
 
         cls = batch["cls"].squeeze(-1)
-        gt = xywh2xyxy(batch["bboxes"]) * torch.tensor(img.shape[2:])[[1, 0, 1, 0]]
+        gt = (
+            xywh2xyxy(batch["bboxes"])
+            * torch.tensor(img.shape[2:])[[1, 0, 1, 0]]
+        )
         pred_cls = det[:, 5]
         if cls.shape[0] and det.shape[0]:
             tp = match_predictions(pred_cls, cls, box_iou(gt, det[:, :4]))
@@ -136,7 +164,9 @@ def evaluate(backend: Backend, eval_set: str, limit: int | None = None) -> dict:
             }
         )
         im_files.append(batch["im_file"][0])
-        label_files.append(loader.dataset.label_files[n])  # shuffle=False, batch=1: batch n is item n
+        label_files.append(
+            loader.dataset.label_files[n]
+        )  # shuffle=False, batch=1: batch n is item n
 
     metrics.process()
     box = metrics.box
@@ -155,7 +185,10 @@ def evaluate(backend: Backend, eval_set: str, limit: int | None = None) -> dict:
     return {
         "protocol_version": PROTOCOL_VERSION,
         "protocol": {
-            "input": f"LetterBox {IMGSZ}x{IMGSZ}, rect=False, scaleup=False, center, pad 114",
+            "input": (
+                f"LetterBox {IMGSZ}x{IMGSZ}, rect=False, "
+                "scaleup=False, center, pad 114"
+            ),
             "conf": EVAL_CONF,
             "iou": EVAL_IOU,
             "max_det": EVAL_MAX_DET,

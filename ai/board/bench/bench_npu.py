@@ -1,8 +1,11 @@
-"""Tier-2 latency of a .rknn model, run ON THE BOARD with RKNNLite (Tables G, H, L).
+"""Tier-2 latency of a .rknn model on the board with RKNNLite.
 
-20 warmup frames, then one timed pass over the test set (pre/npu/post/e2e per image, file
-read/decode excluded). Resource usage (VmRSS, CPU, NPU temperature) is sampled during the pass.
-Usage (on the board, in <board dir>/ai): ../.venv/bin/python -m ai.board.bench.bench_npu --model <dir> --images <dir> --out <json>
+Runs 20 warmup frames, then one timed pass over the test set
+(pre/npu/post/e2e per image, file read/decode excluded) for Tables G, H,
+and L. Resource usage (VmRSS, CPU, NPU temperature) is sampled during
+the pass. Usage (on the board, in <board dir>/ai):
+    ../.venv/bin/python -m ai.board.bench.bench_npu \
+        --model <dir> --images <dir> --out <json>
 """
 
 import argparse
@@ -16,8 +19,18 @@ import yaml
 from rknnlite.api import RKNNLite
 
 from ai.board.bench import WARMUP
-from rk3588_common.board_env import ResourceMonitor, frequency_state, summarize, system_info
-from rk3588_common.model_io import boxes_normalized, list_images, postprocess, preprocess
+from rk3588_common.board_env import (
+    ResourceMonitor,
+    frequency_state,
+    summarize,
+    system_info,
+)
+from rk3588_common.model_io import (
+    boxes_normalized,
+    list_images,
+    postprocess,
+    preprocess,
+)
 from rk3588_common.provenance import add_provenance_args, board_provenance
 
 CORE_MASK = {
@@ -31,7 +44,7 @@ CORE_MASK = {
 
 
 def load_model(model_dir: Path, core_mask: str) -> tuple[RKNNLite, bool]:
-    """Returns the runtime and whether boxes are normalized (Ultralytics INT8 export)."""
+    """Load RKNNLite runtime and return (runtime, boxes_normalized)."""
     meta = yaml.safe_load((model_dir / "metadata.yaml").read_text())
     rknn = RKNNLite(verbose=False)
     if rknn.load_rknn(str(next(model_dir.glob("*.rknn")))) != 0:
@@ -42,8 +55,11 @@ def load_model(model_dir: Path, core_mask: str) -> tuple[RKNNLite, bool]:
 
 
 def main() -> None:
+    """Run tier-2 NPU latency benchmark and write JSON report."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True, type=Path, help="rknn_<precision>/ folder")
+    parser.add_argument(
+        "--model", required=True, type=Path, help="rknn_<precision>/ folder"
+    )
     parser.add_argument("--images", required=True)
     parser.add_argument("--core-mask", default="AUTO", choices=list(CORE_MASK))
     parser.add_argument("--out", required=True, type=Path)
@@ -94,14 +110,22 @@ def main() -> None:
         "system": system_info(),
         "frequency_before": freq_before,
         "frequency_after": frequency_state(),
-        "latency_ms": {"pre": summarize(pre), "npu": summarize(npu), "post": summarize(post), "e2e": e2e_stats},
+        "latency_ms": {
+            "pre": summarize(pre),
+            "npu": summarize(npu),
+            "post": summarize(post),
+            "e2e": e2e_stats,
+        },
         "fps_latency": round(1000 / e2e_stats["mean"], 2),
         "detections_per_image_mean": round(sum(n_det) / len(n_det), 2),
         "resource": monitor.result(),
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(record, indent=2) + "\n")
-    print(f"Done: {args.out}  e2e mean {e2e_stats['mean']} ms, p95 {e2e_stats['p95']} ms")
+    print(
+        f"Done: {args.out}  e2e mean {e2e_stats['mean']} ms, "
+        f"p95 {e2e_stats['p95']} ms"
+    )
 
 
 if __name__ == "__main__":

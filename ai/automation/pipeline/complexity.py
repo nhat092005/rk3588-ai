@@ -1,8 +1,9 @@
 """CLI: Model Complexity of a run (Table E).
 
-Params/GFLOPs of the fused model at 640x640 (MACs = GFLOPs/2); sizes of FP32 .onnx and .rknn,
-not .pt (Ultralytics saves best.pt in FP16, torch_utils.py strip_optimizer).
-Writes runs/<run_id>/complexity.json. Run after export_npu.
+Params/GFLOPs of the fused model at 640x640 (MACs = GFLOPs/2); sizes of
+FP32 .onnx and .rknn, not .pt (Ultralytics saves best.pt in FP16,
+torch_utils.py strip_optimizer). Writes runs/<run_id>/complexity.json.
+Run after export_npu.
 """
 
 import argparse
@@ -18,10 +19,12 @@ from rk3588_common.model_io import IMGSZ, PROTOCOL_VERSION
 
 
 def size_mb(path: Path) -> float | None:
+    """Return file size in MiB rounded to 3 decimals, or None."""
     return round(path.stat().st_size / 2**20, 3) if path.exists() else None
 
 
 def main() -> None:
+    """Compute model params, GFLOPs, MACs, and file sizes for a run."""
     parser = argparse.ArgumentParser()
     parser.add_argument("run_id")
     args = parser.parse_args()
@@ -31,9 +34,15 @@ def main() -> None:
     model = YOLO(weights / "best.pt").model.float().fuse()
     gflops = get_flops(model, IMGSZ)
     if gflops == 0:  # get_flops returns 0.0 silently when thop fails
-        raise RuntimeError("get_flops returned 0; check that ultralytics-thop is installed")
+        raise RuntimeError(
+            "get_flops returned 0; check that ultralytics-thop is installed"
+        )
 
-    rknn = {p.name: size_mb(next(p.glob("*.rknn"))) for p in sorted(weights.glob("rknn_*")) if any(p.glob("*.rknn"))}
+    rknn = {
+        p.name: size_mb(next(p.glob("*.rknn")))
+        for p in sorted(weights.glob("rknn_*"))
+        if any(p.glob("*.rknn"))
+    }
     record = {
         "run_id": args.run_id,
         "protocol_version": PROTOCOL_VERSION,

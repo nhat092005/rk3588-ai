@@ -1,9 +1,9 @@
-"""Hybrid INT8 builds: named tensors stay float16, the rest INT8 (recipe h5 is the project standard, the others were
-used in the phase 2c diagnosis).
+"""Hybrid INT8 builds: named tensors stay float16, the rest INT8.
 
-Tensor names are the ones of the step-1 quantization cfg of RKNN-Toolkit2 2.3.2 for the Ultralytics YOLOv8n detect graph
-with normalized box coordinates (API V2.3.2 p20 to 21 hybrid_quantization_step1 and step2, UG V2.3.2 p124
-custom_quantize_layers).
+Recipe h5 is the project standard; the others were used in the phase 2c
+diagnosis. Tensor names match the step-1 quantization cfg of
+RKNN-Toolkit2 2.3.2 for the Ultralytics YOLOv8n detect graph with
+normalized box coordinates.
 """
 
 from __future__ import annotations
@@ -19,7 +19,10 @@ H1 = re.compile(r"^/model/model\.22/cv3\.\d/cv3\.\d\.2/Conv_output_0$")
 H2 = re.compile(r"^/model/model\.22/cv3\.")
 H6B = re.compile(r"^/model/model\.22/cv2\.")
 BOX_TAIL = re.compile(
-    r"^(/model/model\.22/(dfl/.*|Slice_\d*_?output_0-rs|Slice_output_0-rs|Sub_output_0-rs|Add_1_output_0-rs|Sub_1_output_0-rs|Add_2_output_0-rs|Div_1_output_0-rs|Concat_2_output_0-rs)"
+    r"^(/model/model\.22/(dfl/.*|Slice_\d*_?output_0-rs"
+    r"|Slice_output_0-rs|Sub_output_0-rs|Add_1_output_0-rs"
+    r"|Sub_1_output_0-rs|Add_2_output_0-rs|Div_1_output_0-rs"
+    r"|Concat_2_output_0-rs)"
     r"|/Div_output_0-rs|output0-rs|output0_int8)$"
 )
 TAIL = (
@@ -34,7 +37,7 @@ H5_TENSORS = 15
 
 
 def select_layers(recipe: str, qp: dict) -> list[str]:
-    """Names of the int8 tensors of the step-1 cfg that the recipe keeps in float16."""
+    """Return int8 tensor names from step-1 cfg kept in float16."""
     int8 = {k for k, v in qp.items() if v.get("dtype") == "int8"}
     layers: set[str] = set()
     if recipe == "h1":
@@ -48,12 +51,16 @@ def select_layers(recipe: str, qp: dict) -> list[str]:
     if recipe == "c_all":
         layers |= {k for k in int8 if "images" not in k}
     if recipe in ("h3", "h4"):
-        assert all(t in qp and qp[t].get("dtype") == "int8" for t in TAIL), "output tail names differ in this model"
+        assert all(t in qp and qp[t].get("dtype") == "int8" for t in TAIL), (
+            "output tail names differ in this model"
+        )
         layers |= set(TAIL)
     out = sorted(layers)
     assert out, "no layer matched"
     if recipe == "h5":
-        assert len(out) == H5_TENSORS, f"h5 expects {H5_TENSORS} tensors, matched {len(out)}"
+        assert len(out) == H5_TENSORS, (
+            f"h5 expects {H5_TENSORS} tensors, matched {len(out)}"
+        )
     return out
 
 
@@ -67,30 +74,50 @@ def build_hybrid(
     target: str = "rk3588",
     verbose_file: str | Path | None = None,
 ) -> list[str]:
-    """Quantize with the Ultralytics settings (mean 0, std 255, toolkit defaults), keep the recipe tensors in float16,
-    export the .rknn.
+    """Build a hybrid INT8/FP16 RKNN model and return FP16 layer names.
 
-    Returns the float16 tensor names. Working files of the toolkit go to a temporary directory.
+    Quantizes with Ultralytics settings (mean 0, std 255, toolkit
+    defaults), keeps the recipe tensors in float16, and exports .rknn.
+    Working files of the toolkit go to a temporary directory.
     """
     from rknn.api import RKNN
 
-    onnx_file, dataset, out_rknn = Path(onnx_file).resolve(), Path(dataset).resolve(), Path(out_rknn).resolve()
+    onnx_file, dataset, out_rknn = (
+        Path(onnx_file).resolve(),
+        Path(dataset).resolve(),
+        Path(out_rknn).resolve(),
+    )
+    # verbose=True also prints the layer table that exporter logs keep
     kw = (
-        dict(verbose=True, verbose_file=str(verbose_file)) if verbose_file else dict(verbose=True)
-    )  # verbose=True also prints the layer table that the exporter logs keep (RKNN_LOG_LEVEL=3)
+        {"verbose": True, "verbose_file": str(verbose_file)}
+        if verbose_file
+        else {"verbose": True}
+    )
     cwd = Path.cwd()
     with tempfile.TemporaryDirectory() as tmp:
         os.chdir(tmp)
         try:
             rknn = RKNN(**kw)
-            assert rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform=target) == 0
+            assert (
+                rknn.config(
+                    mean_values=[[0, 0, 0]],
+                    std_values=[[255, 255, 255]],
+                    target_platform=target,
+                )
+                == 0
+            )
             assert rknn.load_onnx(model=str(onnx_file)) == 0
-            assert rknn.hybrid_quantization_step1(dataset=str(dataset), rknn_batch_size=batch) == 0
+            assert (
+                rknn.hybrid_quantization_step1(
+                    dataset=str(dataset), rknn_batch_size=batch
+                )
+                == 0
+            )
             stem = onnx_file.stem
             cfg_file = Path(tmp) / f"{stem}.quantization.cfg"
             q = yaml.safe_load(cfg_file.read_text())
             layers = select_layers(recipe, q["quantize_parameters"])
-            q["custom_quantize_layers"] = {k: "float16" for k in layers}
+            q["custom_quantize_layers"] = dict.fromkeys(layers, "float16")
             cfg_file.write_text(yaml.safe_dump(q, sort_keys=False))
             rknn.release()
             rknn = RKNN(**kw)

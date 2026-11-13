@@ -1,8 +1,9 @@
-"""Lock Evaluation Protocol v1: golden test and cross-check against model.val().
+"""Lock Evaluation Protocol v1: golden test and model.val() check.
 
-golden: evaluator must reproduce golden/evaluator_v1.json (--update rewrites it).
-crosscheck: evaluator vs model.val(rect=False); .pt files default to rect=True, but the
-NPU needs a fixed 640x640 input. Golden model: public yolov8n.pt, pinned by sha256.
+golden: evaluator must reproduce golden/evaluator_v1.json (--update
+rewrites it). crosscheck: evaluator vs model.val(rect=False); .pt files
+default to rect=True, but the NPU needs a fixed 640x640 input. Golden
+model: public yolov8n.pt, pinned by sha256.
 """
 
 import argparse
@@ -25,17 +26,22 @@ from rk3588_common.provenance import provenance
 GOLDEN_PATH = GOLDEN_DIR / f"evaluator_{PROTOCOL_VERSION}.json"
 GOLDEN_WEIGHTS = "yolov8n.pt"
 GOLDEN_EVAL_SET = "css_test"
-GOLDEN_DEVICE = "cpu"  # CPU kernels are deterministic; GPU results may differ in the 4th decimal between machines
+# CPU kernels are deterministic; GPU results may differ in 4th decimal
+GOLDEN_DEVICE = "cpu"
 TOLERANCE = 5e-4  # max |difference| allowed on any metric
 CROSSCHECK_TOLERANCE = 1e-3
 
 
 def sha256(path: str) -> str:
+    """Return hex SHA-256 digest of a file."""
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def metric_items(result: dict) -> dict[str, float]:
-    items = {k: result[k] for k in ("precision", "recall", "map50", "map50_95")}
+    """Flatten overall and per-class metrics into a single dict."""
+    items = {
+        k: result[k] for k in ("precision", "recall", "map50", "map50_95")
+    }
     for name, row in result["per_class"].items():
         for k in ("precision", "recall", "ap50", "ap50_95"):
             items[f"{name}.{k}"] = row[k]
@@ -43,15 +49,24 @@ def metric_items(result: dict) -> dict[str, float]:
 
 
 def compare(expected: dict, actual: dict, tol: float) -> list[str]:
+    """Compare metric dicts and return a list of discrepancy strings."""
     exp, act = metric_items(expected), metric_items(actual)
     errors = [f"{k}: missing" for k in exp if k not in act]
-    errors += [f"{k}: expected {exp[k]}, got {act[k]}" for k in exp if k in act and abs(exp[k] - act[k]) > tol]
+    errors += [
+        f"{k}: expected {exp[k]}, got {act[k]}"
+        for k in exp
+        if k in act and abs(exp[k] - act[k]) > tol
+    ]
     return errors
 
 
 def golden(update: bool) -> int:
-    weights = YOLO(GOLDEN_WEIGHTS).ckpt_path  # downloads yolov8n.pt if missing
-    result = evaluate(UltralyticsBackend(weights, device=GOLDEN_DEVICE), GOLDEN_EVAL_SET)
+    """Run or update the golden evaluation test."""
+    # downloads yolov8n.pt if missing
+    weights = YOLO(GOLDEN_WEIGHTS).ckpt_path
+    result = evaluate(
+        UltralyticsBackend(weights, device=GOLDEN_DEVICE), GOLDEN_EVAL_SET
+    )
     result["golden_weights"] = GOLDEN_WEIGHTS
     result["golden_weights_sha256"] = sha256(weights)
 
@@ -62,19 +77,31 @@ def golden(update: bool) -> int:
         return 0
 
     expected = json.loads(GOLDEN_PATH.read_text())
-    errors = []
-    for key in ("protocol_version", "protocol", "n_images", "dataset_fingerprint", "golden_weights_sha256"):
-        if expected[key] != result[key]:
-            errors.append(f"{key}: expected {expected[key]}, got {result[key]}")
+    meta_keys = (
+        "protocol_version",
+        "protocol",
+        "n_images",
+        "dataset_fingerprint",
+        "golden_weights_sha256",
+    )
+    errors = [
+        f"{key}: expected {expected[key]}, got {result[key]}"
+        for key in meta_keys
+        if expected[key] != result[key]
+    ]
     errors += compare(expected, result, TOLERANCE)
     if errors:
         print("GOLDEN TEST FAILED\n" + "\n".join(errors))
         return 1
-    print(f"GOLDEN TEST PASSED ({len(metric_items(result))} metrics within {TOLERANCE})")
+    n_metrics = len(metric_items(result))
+    print(f"GOLDEN TEST PASSED ({n_metrics} metrics within {TOLERANCE})")
     return 0
 
 
-def crosscheck(weights: str, eval_set: str, device: str, out: Path | None = None) -> int:
+def crosscheck(
+    weights: str, eval_set: str, device: str, out: Path | None = None
+) -> int:
+    """Cross-check protocol v1 evaluator vs model.val(rect=False)."""
     ours = evaluate(UltralyticsBackend(weights, device=device), eval_set)
 
     dataset_name, split = EVAL_SETS[eval_set]
@@ -118,13 +145,20 @@ def crosscheck(weights: str, eval_set: str, device: str, out: Path | None = None
         "per_class": {
             names[int(c)]: {
                 k: round(float(v), 4)
-                for k, v in zip(("precision", "recall", "ap50", "ap50_95"), box.class_result(i), strict=True)
+                for k, v in zip(
+                    ("precision", "recall", "ap50", "ap50_95"),
+                    box.class_result(i),
+                    strict=True,
+                )
             }
             for i, c in enumerate(box.ap_class_index)
         },
     }
     errors = compare(theirs, ours, CROSSCHECK_TOLERANCE)
-    diffs = {k: round(abs(v - metric_items(theirs).get(k, v)), 4) for k, v in metric_items(ours).items()}
+    diffs = {
+        k: round(abs(v - metric_items(theirs).get(k, v)), 4)
+        for k, v in metric_items(ours).items()
+    }
     report = {
         **provenance(code_repos()),
         "weights": str(weights),
@@ -137,24 +171,39 @@ def crosscheck(weights: str, eval_set: str, device: str, out: Path | None = None
         "errors": errors,
     }
     print(json.dumps(report, indent=2))
-    if out is not None and not errors:  # only a passing check marks the step as done
+    if (
+        out is not None and not errors
+    ):  # only a passing check marks the step as done
         out.write_text(json.dumps(report, indent=2) + "\n")
     if errors:
         print("CROSSCHECK FAILED\n" + "\n".join(errors))
         return 1
-    print(f"CROSSCHECK PASSED ({len(metric_items(ours))} metrics within {CROSSCHECK_TOLERANCE})")
+    n_metrics = len(metric_items(ours))
+    print(
+        f"CROSSCHECK PASSED ({n_metrics} metrics within "
+        f"{CROSSCHECK_TOLERANCE})"
+    )
     return 0
 
 
 def main() -> None:
+    """Parse CLI arguments and run golden or crosscheck command."""
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("golden")
     g.add_argument("--update", action="store_true")
     c = sub.add_parser("crosscheck")
     c.add_argument("--weights", default=GOLDEN_WEIGHTS)
-    c.add_argument("--run-id", help="use runs/<id>/weights/best.pt and save runs/<id>/eval/crosscheck_<eval_set>.json")
-    c.add_argument("--eval-set", default=GOLDEN_EVAL_SET, choices=list(EVAL_SETS))
+    c.add_argument(
+        "--run-id",
+        help=(
+            "use runs/<id>/weights/best.pt and save "
+            "runs/<id>/eval/crosscheck_<eval_set>.json"
+        ),
+    )
+    c.add_argument(
+        "--eval-set", default=GOLDEN_EVAL_SET, choices=list(EVAL_SETS)
+    )
     c.add_argument("--device", default="0")
     args = parser.parse_args()
     if args.cmd == "golden":
@@ -162,7 +211,10 @@ def main() -> None:
     out = None
     if args.run_id:
         run_dir = RUNS_DIR / args.run_id
-        args.weights, out = str(run_dir / "weights" / "best.pt"), run_dir / "eval" / f"crosscheck_{args.eval_set}.json"
+        args.weights, out = (
+            str(run_dir / "weights" / "best.pt"),
+            run_dir / "eval" / f"crosscheck_{args.eval_set}.json",
+        )
     sys.exit(crosscheck(args.weights, args.eval_set, args.device, out))
 
 

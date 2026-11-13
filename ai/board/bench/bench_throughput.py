@@ -1,7 +1,10 @@
-"""Throughput FPS with several RKNNLite contexts in parallel, run ON THE BOARD (Table I).
+"""Throughput FPS with parallel RKNNLite contexts on the board.
 
-One thread per context, each running pre->NPU->post on cached decoded frames (file decode excluded).
-Throughput FPS = frames / wall time. Usage: python -m ai.board.bench.bench_throughput --model <dir> --images <dir> --core-masks <masks> --out <json>
+Runs one thread per context (pre->NPU->post) on cached decoded frames
+(file decode excluded) for Table I. Throughput FPS = frames / wall time.
+Usage:
+    python -m ai.board.bench.bench_throughput \
+        --model <dir> --images <dir> --core-masks <masks> --out <json>
 """
 
 import argparse
@@ -16,18 +19,34 @@ import cv2
 
 from ai.board.bench import WARMUP
 from ai.board.bench.bench_npu import CORE_MASK, load_model
-from rk3588_common.board_env import ResourceMonitor, frequency_state, summarize, system_info
+from rk3588_common.board_env import (
+    ResourceMonitor,
+    frequency_state,
+    summarize,
+    system_info,
+)
 from rk3588_common.model_io import list_images, postprocess, preprocess
 from rk3588_common.provenance import add_provenance_args, board_provenance
 
 
 def main() -> None:
+    """Run multi-context NPU throughput benchmark and write JSON."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True, type=Path, help="rknn_<precision>/ folder")
+    parser.add_argument(
+        "--model", required=True, type=Path, help="rknn_<precision>/ folder"
+    )
     parser.add_argument("--images", required=True)
-    parser.add_argument("--core-masks", required=True, help="one per context, e.g. CORE_0,CORE_1,CORE_2 or AUTO")
-    parser.add_argument("--cache", type=int, default=200, help="decoded images kept in RAM")
-    parser.add_argument("--frames", type=int, default=1238, help="total frames processed")
+    parser.add_argument(
+        "--core-masks",
+        required=True,
+        help="one per context, e.g. CORE_0,CORE_1,CORE_2 or AUTO",
+    )
+    parser.add_argument(
+        "--cache", type=int, default=200, help="decoded images kept in RAM"
+    )
+    parser.add_argument(
+        "--frames", type=int, default=1238, help="total frames processed"
+    )
     parser.add_argument("--out", required=True, type=Path)
     add_provenance_args(parser)
     args = parser.parse_args()
@@ -36,7 +55,9 @@ def main() -> None:
     for m in masks:
         if m not in CORE_MASK:
             parser.error(f"unknown core mask {m}")
-    frames = [cv2.imread(str(p)) for p in list_images(args.images)[: args.cache]]
+    frames = [
+        cv2.imread(str(p)) for p in list_images(args.images)[: args.cache]
+    ]
     contexts = [load_model(args.model, m) for m in masks]
     freq_before = frequency_state()
 
@@ -63,7 +84,10 @@ def main() -> None:
             postprocess(rknn.inference(inputs=[inp])[0], meta, normalized)
             latencies[k].append((time.perf_counter() - t0) * 1e3)
 
-    threads = [threading.Thread(target=worker, args=(k,)) for k in range(len(contexts))]
+    threads = [
+        threading.Thread(target=worker, args=(k,))
+        for k in range(len(contexts))
+    ]
     for t in threads:
         t.start()
     with ResourceMonitor() as monitor:
@@ -97,7 +121,10 @@ def main() -> None:
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(record, indent=2) + "\n")
-    print(f"Done: {args.out}  throughput {record['throughput_fps']} FPS with {len(contexts)} context(s)")
+    print(
+        f"Done: {args.out}  throughput {record['throughput_fps']} FPS "
+        f"with {len(contexts)} context(s)"
+    )
 
 
 if __name__ == "__main__":
