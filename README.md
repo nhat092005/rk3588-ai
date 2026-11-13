@@ -9,7 +9,7 @@ PC side of PPE detection on RK3588: datasets, training, export, evaluation, and 
 | `ai/core/rknn/` | `baseline.py` (Ultralytics RKNN and ONNX export), `hybrid.py` (hybrid INT8 recipes, h5 standard), `calibration.py` (calibration sampling, letterboxed PNG through `rk3588_common.model_io.preprocess`), `benchmark.py` (tier-1 `eval_perf`/`eval_memory` from the PC) | Migrated |
 | `ai/models/` | One folder per model (`yolov8n_baseline`), see `ai/models/README.md` | Migrated |
 | `ai/automation/configs/` | Run configs (`ppe5_yolov8n_baseline`, `_200ep`) | Migrated |
-| `ai/automation/pipeline/` | `run` (train + protocol v1 eval + leaderboard), `evaluate` (pt, onnx, rknn on the board), `check_evaluator` (golden, crosscheck), `export_npu`, `complexity`, `pipeline` (phase2-4 through make) | Migrated |
+| `ai/automation/pipeline/` | `run` (train + protocol v1 eval + leaderboard), `evaluate` (pt, onnx, rknn on the board), `check_evaluator` (golden, crosscheck), `export_npu`, `complexity` | Migrated |
 | `ai/automation/report/`, `ai/automation/bench/` | `tables` (Tables A-M), `bench_gpu`, `benchmark_npu` (tier 1), `board_check` | Migrated |
 | `ai/board/` | Research harness that runs on the board: `bench/` (`bench_npu`, `bench_cpu_onnx`, `bench_throughput`, `WARMUP`), `probe/infer_dump` (NPU outputs for the evaluator) | Migrated |
 | `ai/research/`, `ai/npu/` | Research lines and NPU studies | Migrated on demand, closed ones stay in `legacy-final` |

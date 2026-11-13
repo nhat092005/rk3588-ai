@@ -1,4 +1,4 @@
-"""CLI: build every table of Guide section 7 from result files.
+"""CLI: build every report table (A-M) from result files.
 
 Run: make tables DATASET=<dataset>
 Writes results/<dataset>/table_<X>_*.md, tables.csv, and SOURCES.md
@@ -529,7 +529,7 @@ def table_f(b: Builder, runs: dict) -> str:
     for eval_set in EVAL_SETS_BY_DATASET[b.dataset]:
         rows = []
         for model, seeds in runs.items():
-            # Hybrid INT8 standard of phase 2c.
+            # Hybrid INT8 standard (recipe h5).
             h5 = (
                 ("int8h5",)
                 if all(
@@ -1045,9 +1045,8 @@ def table_j_m(b: Builder) -> str:
         [
             "# Table J, M",
             "",
-            "Baseline rows come from Tables F, G, I, L. Pruning / "
-            "activation / proposed-model rows are added once those runs "
-            "exist (Phase 7, 8); column layout: Guide section 7.",
+            "Baseline rows come from Tables F, G, I, L. Rows of other "
+            "models are added once their runs exist.",
         ]
     )
 

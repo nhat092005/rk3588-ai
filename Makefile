@@ -1,7 +1,7 @@
 # rk3588-ai targets. Run inside the rk3588 meta-repo, from this directory or with `make -C ai <target>`.
 # Board settings (BOARD, BOARD_DIR, DEVICE) come from the meta-repo board.mk. Ported from legacy-final:Makefile.
 .PHONY: help test train evaluate golden-test golden-update crosscheck export-npu complexity tables bench-gpu \
-	benchmark-npu sync-board board-check bench-board bench-board-cpu bench-board-throughput phase2 phase3 phase4 \
+	benchmark-npu sync-board board-check bench-board bench-board-cpu bench-board-throughput \
 	leaderboard prepare-data
 
 include ../board.mk
@@ -22,10 +22,6 @@ BOARD_PY   = cd $(BOARD_AI) && ../.venv/bin/python -m
 BOARD_PROV = --run-id $(RUN) $(shell $(PY) -m ai.core.provenance board-args)
 
 help:
-	@echo "Phases (skip finished steps, end with make tables):"
-	@echo "  make phase2 DATASET=<ds>       train baselines (seed 0) + crosscheck"
-	@echo "  make phase3 DATASET=<ds>       export FP16/INT8/INT8H5, complexity, evaluate ONNX/RKNN"
-	@echo "  make phase4 DATASET=<ds>       tier 1, tier 2, CPU, throughput, GPU reference (needs LOCK)"
 	@echo "Training and evaluation:"
 	@echo "  make train CONFIG=ai/automation/configs/<c>.yaml [SEED=<n>]"
 	@echo "  make evaluate RUN=<id> BACKEND=pt|onnx|rknn [PREC=fp16|int8|int8h5]"
@@ -85,9 +81,6 @@ sync-board:
 
 board-check:
 	$(PY) -m ai.automation.bench.board_check $(BOARD) $(DEVICE) $(if $(LOCK),--require-lock)
-
-phase2 phase3 phase4:
-	$(PY) -m ai.automation.pipeline.pipeline $@ --dataset $(DATASET)
 
 bench-board:
 	ssh $(BOARD) 'mkdir -p $(BOARD_AI)/$(RUN_DIR)/weights $(BOARD_AI)/$(RUN_DIR)/bench'

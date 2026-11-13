@@ -88,8 +88,7 @@ def main() -> None:
     )
     model_weights = model_module.WEIGHTS
 
-    # No date: the same config + seed always maps to the same run, so
-    # make phase2 can skip finished runs
+    # No date: the same config + seed always maps to the same run
     run_id = (
         f"{cfg['dataset']}_{cfg['model']}_{cfg['epochs']}ep_s{cfg['seed']}"
     )

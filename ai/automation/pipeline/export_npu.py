@@ -112,7 +112,7 @@ def main() -> None:
         choices=["h5"],
         help=(
             "INT8 only: hybrid recipe, written as precision int8h5 "
-            "(float16 box-decode tail, standard INT8 of phase 2c)"
+            "(float16 box-decode tail, the standard INT8)"
         ),
     )
     args = parser.parse_args()
