@@ -1,0 +1,85 @@
+{
+  "protocol_version": "v1",
+  "protocol": {
+    "input": "LetterBox 640x640, rect=False, scaleup=False, center, pad 114",
+    "conf": 0.001,
+    "iou": 0.7,
+    "max_det": 300,
+    "multi_label": true
+  },
+  "repos": {
+    "ai": {
+      "commit": "d943f0551d01dc15f9536f6f8f2ea6ef9877610f",
+      "dirty": false
+    },
+    "common": {
+      "commit": "5b737d635f12814f915804e828749cfa026635d6",
+      "dirty": false
+    }
+  },
+  "ultralytics_version": "8.4.154",
+  "torch_version": "2.4.0+cu124",
+  "eval_set": "ppe2286_ext",
+  "dataset": "ppe5",
+  "split": "test_ext",
+  "n_images": 180,
+  "classes": [
+    "Helmet",
+    "NoHelmet",
+    "NoVest",
+    "Vest",
+    "Person"
+  ],
+  "dataset_fingerprint": "68ad8ef4e58d55d2d70c792977550b5e38d63674f0209178402024f1f1fe2495",
+  "precision": 0.5398,
+  "recall": 0.5708,
+  "map50": 0.5315,
+  "map50_95": 0.2342,
+  "per_class": {
+    "Helmet": {
+      "precision": 0.5422,
+      "recall": 0.6304,
+      "ap50": 0.4417,
+      "ap50_95": 0.0789,
+      "instances": 184
+    },
+    "NoHelmet": {
+      "precision": 0.0308,
+      "recall": 0.0312,
+      "ap50": 0.0136,
+      "ap50_95": 0.0027,
+      "instances": 64
+    },
+    "NoVest": {
+      "precision": 0.6282,
+      "recall": 0.5523,
+      "ap50": 0.5954,
+      "ap50_95": 0.2594,
+      "instances": 104
+    },
+    "Vest": {
+      "precision": 0.793,
+      "recall": 0.7982,
+      "ap50": 0.8228,
+      "ap50_95": 0.4284,
+      "instances": 144
+    },
+    "Person": {
+      "precision": 0.705,
+      "recall": 0.8416,
+      "ap50": 0.7842,
+      "ap50_95": 0.4014,
+      "instances": 247
+    }
+  },
+  "run_id": "ppe5_yolov8n_baseline_100ep_s0",
+  "model_file": "weights/rknn_int8/best-rk3588.rknn",
+  "model_sha256": "ea6002f6cbb11986a3ffb6403f9eac3529e0fc261e697710c2262a87392c78c6",
+  "backend": "rknnlite-on-board",
+  "sdk_version": "==============================================\nRKNN VERSION:\n  API: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)\n  DRV: 0.9.8\n==============================================\n",
+  "board_dump": {
+    "created_at": "2026-11-13T14:59:55",
+    "kept_anchors": 20377,
+    "normalized_boxes": true
+  }
+}
