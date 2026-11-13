@@ -14,7 +14,7 @@ from ai.core.evaluator import EVAL_SETS_BY_DATASET
 from ai.core.evaluator import evaluate as evaluate_v1
 from ai.core.provenance import code_repos
 from ai.core.trainer import TrainConfig, evaluate, train
-from ai.paths import LEADERBOARDS_DIR, RUNS_DIR
+from ai.paths import LEADERBOARDS_DIR, REPO_ROOT, RUNS_DIR
 from rk3588_common.provenance import file_sha256
 
 
@@ -34,6 +34,16 @@ def sort_plots(source_dir: Path, plots_dir: Path, split_label: str) -> None:
         else:
             dest = curves_dir / f.name
         shutil.move(str(f), str(dest))
+
+
+def relativize_args(args_yaml: Path, root: Path = REPO_ROOT) -> None:
+    """Make the repo paths in an Ultralytics args.yaml relative to root.
+
+    Ultralytics writes data, project and save_dir as given (absolute).
+    Tracked files hold no absolute paths (STANDARDS.md, section 4).
+    """
+    text = args_yaml.read_text()
+    args_yaml.write_text(text.replace(f"{root}/", ""))
 
 
 def append_leaderboard(dataset: str, row: dict) -> None:
@@ -118,6 +128,7 @@ def main() -> None:
     results_csv = run_dir / "results.csv"
     if results_csv.exists():
         shutil.move(str(results_csv), run_dir / "metrics.csv")
+    relativize_args(run_dir / "args.yaml")
 
     sort_plots(run_dir, run_dir / "plots", split_label="val")
 
