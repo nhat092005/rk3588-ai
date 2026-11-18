@@ -2,7 +2,7 @@
 
 Timing comes from board hardware via eval_perf(), unaffected by PC-board
 network delay. Needs adbd + rknn_server on the board (rk3588-deploy
-sh/start_rknn_server.sh). Output formats match RKNN-Toolkit2 2.3.2,
+sh/env/start_rknn_server.sh). Output formats match RKNN-Toolkit2 2.3.2,
 tested in tests/test_rknn.py on a real eval_perf output.
 """
 

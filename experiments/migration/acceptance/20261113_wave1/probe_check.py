@@ -2,7 +2,7 @@
 
 Run on the board from ~/rk3588-board/ai:
     ../.venv/bin/python <this file> <rknn_dir> <images_dir> \
-        ../deploy/bin/probe_infer
+        ../deploy/bin/probes/device/probe_infer
 """
 
 import subprocess

@@ -55,7 +55,7 @@ def main() -> None:
     if f"{args.device_id}\tdevice" not in devices:
         fixes.append(
             "adb cannot reach the board: "
-            "sudo bash deploy/sh/start_rknn_server.sh"
+            "sudo bash deploy/sh/env/start_rknn_server.sh"
         )
 
     remote_cmd = (
@@ -70,7 +70,7 @@ def main() -> None:
     if "SERVER_OK" not in remote.stdout:
         fixes.append(
             "rknn_server is not running: "
-            "sudo bash deploy/sh/start_rknn_server.sh"
+            "sudo bash deploy/sh/env/start_rknn_server.sh"
         )
     governors = [g for g in remote.stdout.split() if g != "SERVER_OK"]
     # tier 1 (eval_perf fix_freq=True) leaves NPU/DDR on 'userspace'
