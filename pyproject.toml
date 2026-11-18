@@ -3,13 +3,15 @@ name = "rk3588-ai"
 version = "0.0.0"
 description = "PC side of RK3588 PPE detection: datasets, training, export, evaluation, NPU measurement"
 requires-python = ">=3.12,<3.13"
-# Versions from legacy-final:pyproject.toml and uv.lock. av and lap (demo only) come back with scripts/demo.
+# Versions from legacy-final:pyproject.toml and uv.lock. av (demo only) comes back with scripts/demo.
+# lap is the solver of Ultralytics ByteTrack: the C++ tracker in deploy/ is tested against it.
 dependencies = [
     "rk3588-common",
     "torch==2.4.0",
     "numpy<=1.26.4",
     "setuptools<82",
     "ultralytics==8.4.154",  # exact: evaluation results depend on it
+    "lap==0.5.14",  # exact: the tracker test data depends on its tie breaking
     "pyyaml>=6.0",
     "rknn-toolkit2==2.3.2",
     "onnx==1.18.0",  # Ultralytics RKNN export needs onnx<1.19; version of every existing export
