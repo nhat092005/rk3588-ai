@@ -97,10 +97,56 @@ traces as in the SiLU one.
   not read.
 - One model of each activation, one input size (640x640), one core mask.
 
+## Evidence
+
+`conv_split` on the first inference, ReLU split head (counts per kind of
+task):
+
+```
+    8 x kernel=1x1 in_w=20 in_h=(7, 7, 6) out_h=(7, 7, 6) pad_top=(0, 0, 0) first_row=(0, 7, 14) weights=1
+    8 x kernel=1x1 in_w=40 in_h=(14, 13, 13) out_h=(14, 13, 13) pad_top=(0, 0, 0) first_row=(0, 14, 27) weights=1
+    1 x kernel=1x1 in_w=80 in_h=(13, 13, 13) out_h=(13, 13, 13) pad_top=(0, 0, 0) first_row=(0, 13, 26) weights=1
+    1 x kernel=1x1 in_w=80 in_h=(14, 14, 13) out_h=(14, 14, 13) pad_top=(0, 0, 0) first_row=(0, 14, 28) weights=1
+    5 x kernel=1x1 in_w=80 in_h=(27, 27, 26) out_h=(27, 27, 26) pad_top=(0, 0, 0) first_row=(0, 27, 54) weights=1
+    1 x kernel=1x1 in_w=160 in_h=(27, 26, 26) out_h=(27, 26, 26) pad_top=(0, 0, 0) first_row=(0, 27, 53) weights=1
+    1 x kernel=1x1 in_w=160 in_h=(27, 27, 27) out_h=(27, 27, 27) pad_top=(0, 0, 0) first_row=(0, 27, 54) weights=1
+    1 x kernel=1x1 in_w=160 in_h=(54, 53, 53) out_h=(54, 53, 53) pad_top=(0, 0, 0) first_row=(0, 54, 107) weights=1
+    8 x kernel=3x3 in_w=20 in_h=(8, 9, 7) out_h=(7, 7, 6) pad_top=(1, 0, 0) first_row=(0, 6, 13) weights=1
+    1 x kernel=3x3 in_w=40 in_h=(14, 15, 13) out_h=(7, 7, 6) pad_top=(1, 0, 0) first_row=(0, 13, 27) weights=1
+   12 x kernel=3x3 in_w=40 in_h=(15, 15, 14) out_h=(14, 13, 13) pad_top=(1, 0, 0) first_row=(0, 13, 26) weights=1
+    1 x kernel=3x3 in_w=40 in_h=(40, 40, 40) out_h=(20, 20, 20) pad_top=(1, 1, 1) first_row=(0, 0, 0) weights=3
+    2 x kernel=3x3 in_w=80 in_h=(28, 27, 27) out_h=(14, 13, 13) pad_top=(1, 0, 0) first_row=(0, 27, 53) weights=1
+   10 x kernel=3x3 in_w=80 in_h=(28, 29, 27) out_h=(27, 27, 26) pad_top=(1, 0, 0) first_row=(0, 26, 53) weights=1
+    1 x kernel=3x3 in_w=160 in_h=(54, 55, 53) out_h=(27, 27, 26) pad_top=(1, 0, 0) first_row=(0, 53, 107) weights=1
+    2 x kernel=3x3 in_w=160 in_h=(55, 55, 54) out_h=(54, 53, 53) pad_top=(1, 0, 0) first_row=(0, 53, 106) weights=1
+    1 x kernel=3x3 in_w=320 in_h=(54, 55, 55) out_h=(27, 27, 27) pad_top=(1, 0, 0) first_row=(0, 53, 107) weights=1
+    1 x kernel=3x3 in_w=320 in_h=(55, 53, 53) out_h=(27, 26, 26) pad_top=(0, 0, 0) first_row=(0, 54, 106) weights=1
+    5 x kernel=3x3 in_w=640 in_h=(31, 31, 31) out_h=(15, 15, 15) pad_top=(0, 0, 0) first_row=(0, None, None) weights=1
+    1 x kernel=3x3 in_w=640 in_h=(32, 33, 33) out_h=(16, 16, 16) pad_top=(1, 0, 0) first_row=(0, None, None) weights=1
+    1 x kernel=3x3 in_w=640 in_h=(33, 33, 31) out_h=(16, 16, 15) pad_top=(0, 0, 0) first_row=(0, 6, 12) weights=1
+```
+
+Same on the SiLU control (all 3-core convs):
+
+```
+    2 x kernel=1x1 in_w=20 in_h=(7, 7, 6) out_h=(7, 7, 6) pad_top=(0, 0, 0) first_row=(0, 7, 14) weights=1
+    2 x kernel=1x1 in_w=40 in_h=(14, 13, 13) out_h=(14, 13, 13) pad_top=(0, 0, 0) first_row=(0, 14, 27) weights=1
+    2 x kernel=1x1 in_w=80 in_h=(27, 27, 26) out_h=(27, 27, 26) pad_top=(0, 0, 0) first_row=(0, 27, 54) weights=1
+```
+
 ## Files
 
+Only this note is tracked. The traces and the reader outputs stay local
+(ignored by git, `experiments/**/*.log.gz` and `experiments/npu/**/results/`):
+
 - `trace_silu.log.gz`, `trace_relu.log.gz`, `trace_relu_raw.log.gz`:
-  traces (gzip).
-- `results/*_summarize.txt`, `results/*_conv_split.txt`: reader outputs
-  (the first line holds the log name). `diff_cores` output is not kept,
-  rerun it on the traces (120 KB each).
+  gzip of the three logs. Rerun the readers on them as in Method.
+- `results/*_summarize.txt`, `results/*_conv_split.txt`: reader outputs.
+
+Full sha256 of the uncompressed traces:
+
+```
+b8b25d67136bda858e3190c41f5d5c7f2bfbfef769081fd88d5f80caf8821912  trace_silu.log
+e100288b83a61a48774e984a55157c528a6cc30612189d22c61eb0f8acfb4da3  trace_relu.log
+270a22a4da44054057e7e26838a6be6ee57225f8280ef599b414140d0a5c8225  trace_relu_raw.log
+```

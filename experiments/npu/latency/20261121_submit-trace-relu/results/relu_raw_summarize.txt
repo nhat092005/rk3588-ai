@@ -1,3 +1,0 @@
-trace_relu_raw.log
-  submits per inference: 51  tasks by (mask, kind) for first inference: {('0x7', 'conv'): 72, ('0x7', 'pool'): 40, ('0x1', 'elementwise'): 40, ('0x7', 'elementwise'): 38, ('0x1', 'pool'): 6}
-  height triplets (rows per core, count): {(16, 16, 16): 1, (16, 16, 15): 1, (15, 15, 15): 5, (27, 27, 27): 2, (27, 26, 26): 2, (54, 53, 53): 6, (27, 27, 26): 25, (14, 13, 13): 36, (20, 20, 20): 1, (7, 7, 6): 29, (14, 14, 13): 1, (13, 13, 13): 1}
