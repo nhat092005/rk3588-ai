@@ -1,7 +1,7 @@
 # rk3588-ai targets. Run inside the rk3588 meta-repo, from this directory or with `make -C ai <target>`.
 # Board settings (BOARD, BOARD_DIR, DEVICE) come from the meta-repo board.mk. Ported from legacy-final:Makefile.
 .PHONY: help test train evaluate golden-test golden-update crosscheck export-npu complexity tables bench-gpu \
-	benchmark-npu sync-board board-check bench-board bench-board-cpu bench-board-throughput \
+	benchmark-npu build-npu-trace sync-board board-check bench-board bench-board-cpu bench-board-throughput \
 	leaderboard prepare-data
 
 include ../board.mk
@@ -36,6 +36,7 @@ help:
 	@echo "  make bench-board RUN=<id> PREC=<p> [CORE_MASK=AUTO]"
 	@echo "  make bench-board-cpu RUN=<id> [THREADS=4]"
 	@echo "  make bench-board-throughput RUN=<id> PREC=<p> CORE_MASKS=CORE_0,CORE_1,CORE_2"
+	@echo "  make build-npu-trace           build the LD_PRELOAD submit tracer on the board (after sync-board)"
 	@echo "Data and utilities:"
 	@echo "  make prepare-data DATASET=ppe5 | leaderboard DATASET=<ds> | test"
 
@@ -78,6 +79,10 @@ sync-board:
 	$(MAKE) -C .. sync-board-py
 	ssh $(BOARD) 'mkdir -p $(BOARD_AI)/$(BOARD_IMAGES)'
 	rsync -aL --delete $(BOARD_IMAGES)/ $(BOARD):$(BOARD_AI)/$(BOARD_IMAGES)/
+
+# Submit tracer: LD_PRELOAD=<so> NPU_TRACE_OUT=<log>; read the log with ai.npu.latency.summarize and diff_cores.
+build-npu-trace:
+	ssh $(BOARD) 'cd $(BOARD_AI)/ai/board/probe && gcc -O2 -shared -fPIC -o npu_trace.so npu_trace.c -ldl'
 
 board-check:
 	$(PY) -m ai.automation.bench.board_check $(BOARD) $(DEVICE) $(if $(LOCK),--require-lock)

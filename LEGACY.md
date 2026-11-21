@@ -16,7 +16,7 @@ analysis scripts in the `script` column (mostly `ai/npu/<topic>/`).
 |---|---|---|---|
 | `onboard`, `e2`, `e2b`, `e2c`, `e2d`, `e2e` | npu / latency | `npu/latency/onboard`, `npu/latency/onboard_e2*` | `ai/npu/latency/analyze_onboard.py` |
 | `x1`-`x6`, `x8`, `x9`, `x10` | npu / latency | `npu/latency/onboard_x*`, `npu/latency/analysis_x10` | `ai/npu/latency/analyze_*.py`, `aggregate_layers.py` |
-| `submit_trace` | npu / latency | `npu/latency/submit_trace` | in the directory (`npu_trace.c`, `summarize.py`) |
+| `submit_trace` | npu / latency | `npu/latency/submit_trace` | in the directory. Code migrated to `ai/board/probe/npu_trace.c` and `ai/npu/latency/`, the two logs stay in legacy |
 | `g4`, `g4b`, `g4v`, `g4v2` (gate G4) | npu / operator_support | `npu/operator_support/eval_g4`, `onboard_g4*` | `ai/npu/operator_support/analyze_g4*.py`, profile `ai/automation/profiles/npu_g4.yaml`, `ai/automation/report/acceptance.py` |
 | `x7`, `x7b` | npu / operator_support | `npu/operator_support/eval_x7*` | `ai/npu/operator_support/analyze_x7.py` |
 | `q2c`, `q2e`, `q2e_qat`, `q2h`, `q2i`, `q2j` | npu / operator_support | `npu/operator_support/onboard_q2*` | `ai/npu/operator_support/analyze_q2*.py`, `build_*.py`, `ai/core/rknn/{split_head,qat_split,blocks}.py` |
