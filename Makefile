@@ -82,7 +82,7 @@ sync-board:
 
 # Submit tracer: LD_PRELOAD=<so> NPU_TRACE_OUT=<log>; read the log with ai.npu.latency.summarize and diff_cores.
 build-npu-trace:
-	ssh $(BOARD) 'cd $(BOARD_AI)/ai/board/probe && gcc -O2 -shared -fPIC -o npu_trace.so npu_trace.c -ldl'
+	ssh $(BOARD) 'cd $(BOARD_AI)/ai/board/probe && gcc -O2 -shared -fPIC -o npu_trace.so npu_trace.c -ldl -lpthread'
 
 board-check:
 	$(PY) -m ai.automation.bench.board_check $(BOARD) $(DEVICE) $(if $(LOCK),--require-lock)

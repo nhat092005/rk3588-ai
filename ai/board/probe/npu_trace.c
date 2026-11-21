@@ -1,12 +1,16 @@
 // LD_PRELOAD tracer for the RKNPU DRM ioctls. Logs MEM_CREATE/MEM_MAP, and for every SUBMIT the
 // per-core task ranges plus the register command words of each task. Read-only observer.
+// Only the exact RKNPU requests are traced (DRM_IOWR('d', 0x41..0x45, <rknpu struct>)), other DRM
+// drivers share the command numbers but not the request size. State is guarded by a mutex.
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 
@@ -17,12 +21,25 @@ static int nmem;
 static FILE *lf;
 static int nsubmit;
 static int max_submit = 100000;
+static pthread_mutex_t mu = PTHREAD_MUTEX_INITIALIZER;
 
 struct rknpu_mem_create { uint32_t handle, flags; uint64_t size, obj_addr, dma_addr, sram_size; int32_t iommu_domain_id; uint32_t core_mask; };
 struct rknpu_mem_map { uint32_t handle, reserved; uint64_t offset; };
 struct rknpu_task { uint32_t flags, op_idx, enable_mask, int_mask, int_clear, int_status, regcfg_amount, regcfg_offset; uint64_t regcmd_addr; } __attribute__((packed));
 struct sub { uint32_t task_start, task_number; };
+struct rknpu_mem_destroy { uint32_t handle, reserved; uint64_t obj_addr; };
+struct rknpu_mem_sync { uint32_t flags, reserved; uint64_t obj_addr, offset, size; };
 struct rknpu_submit { uint32_t flags, timeout, task_start, task_number, task_counter; int32_t priority; uint64_t task_obj_addr; uint32_t iommu_domain_id, reserved; uint64_t task_base_addr; int64_t hw_elapse_time; uint32_t core_mask; int32_t fence_fd; struct sub subcore_task[5]; };
+
+#define RKNPU_REQ(nr, type) _IOWR('d', 0x40 + (nr), type)
+static int rknpu_ioctl_idx(unsigned long req) {  // 1 submit, 2 create, 3 map, 4 destroy, 5 sync, 0 other
+    if (req == RKNPU_REQ(1, struct rknpu_submit)) return 1;
+    if (req == RKNPU_REQ(2, struct rknpu_mem_create)) return 2;
+    if (req == RKNPU_REQ(3, struct rknpu_mem_map)) return 3;
+    if (req == RKNPU_REQ(4, struct rknpu_mem_destroy)) return 4;
+    if (req == RKNPU_REQ(5, struct rknpu_mem_sync)) return 5;
+    return 0;
+}
 
 static void init(void) {
     if (lf) return;
@@ -40,10 +57,10 @@ int ioctl(int fd, unsigned long req, ...) {
     static int (*real)(int, unsigned long, ...);
     if (!real) real = dlsym(RTLD_NEXT, "ioctl");
     va_list ap; va_start(ap, req); void *arg = va_arg(ap, void *); va_end(ap);
-    unsigned type = (req >> 8) & 0xff, nr = req & 0xff;
-    if (type == 'd' && nr >= 0x41 && nr <= 0x45) {
+    int idx = rknpu_ioctl_idx(req);
+    if (idx) {
+        pthread_mutex_lock(&mu);
         init();
-        int idx = nr - 0x40;  // 1 submit, 2 create, 3 map, 4 destroy, 5 sync
         if (idx == 1 && nsubmit < max_submit) {
             struct rknpu_submit *s = arg;
             fprintf(lf, "SUBMIT n=%d core_mask=0x%x task_start=%u task_number=%u base=0x%llx obj=0x%llx sub=", nsubmit, s->core_mask, s->task_start, s->task_number, (unsigned long long)s->task_base_addr, (unsigned long long)s->task_obj_addr);
@@ -62,10 +79,12 @@ int ioctl(int fd, unsigned long req, ...) {
                         if (rm && rm->ptr) {
                             uint64_t *w = (uint64_t *)((char *)rm->ptr + (q->regcmd_addr - rm->dma));
                             unsigned n = q->regcfg_amount + 4;
-                            if (n > 400) n = 400;
+                            uint64_t avail = (rm->dma + rm->size - q->regcmd_addr) / 8;  // words left in the buffer
+                            if (n > avail) n = avail;
                             fprintf(lf, "CMD");
                             for (unsigned j = 0; j < n; j++) fprintf(lf, " %016llx", (unsigned long long)w[j]);
                             fprintf(lf, "\n");
+                            if (n != q->regcfg_amount + 4) fprintf(lf, "CMDCUT want=%u got=%u\n", q->regcfg_amount + 4, n);
                         } else fprintf(lf, "CMD unmapped\n");
                     }
                 }
@@ -73,7 +92,9 @@ int ioctl(int fd, unsigned long req, ...) {
             nsubmit++;
             fflush(lf);
         }
+        pthread_mutex_unlock(&mu);
         int r = real(fd, req, arg);
+        pthread_mutex_lock(&mu);
         if (idx == 2 && r == 0 && nmem < NMEM) {
             struct rknpu_mem_create *c = arg;
             mem[nmem++] = (struct memrec){c->handle, c->obj_addr, c->dma_addr, c->size, 0, NULL, 1};
@@ -81,6 +102,7 @@ int ioctl(int fd, unsigned long req, ...) {
             struct rknpu_mem_map *m = arg; struct memrec *x = by_handle(m->handle);
             if (x) x->off = m->offset;
         }
+        pthread_mutex_unlock(&mu);
         return r;
     }
     return real(fd, req, arg);
@@ -90,7 +112,12 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) {
     static void *(*real)(void *, size_t, int, int, int, off_t);
     if (!real) real = dlsym(RTLD_NEXT, "mmap");
     void *p = real(addr, len, prot, flags, fd, off);
-    if (p != MAP_FAILED && fd >= 0 && off) { struct memrec *x = by_off((uint64_t)off); if (x) x->ptr = p; }
+    if (p != MAP_FAILED && fd >= 0 && off) {
+        pthread_mutex_lock(&mu);
+        struct memrec *x = by_off((uint64_t)off);
+        if (x) x->ptr = p;
+        pthread_mutex_unlock(&mu);
+    }
     return p;
 }
 
