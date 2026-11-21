@@ -6,8 +6,10 @@ differ as (target, register, value core 0, core 1, core 2). Rows and
 addresses that differ mean the task is split; a task whose only
 difference is the PC register 0x10 (next-task address) is not.
 
-Compares words up to the shortest of the three; tasks are paired by
-position, which holds when the cores have equal task counts.
+Compares words up to the shortest of the three and adds a "length
+differs" line when the three tasks have different word counts. Tasks are
+paired by position, so a submit whose cores have unequal task counts
+raises ValueError.
 """
 
 import argparse
@@ -22,7 +24,10 @@ def diff_lines(path: Path) -> list[str]:
     for s in parse_trace(path):
         if s.mask != "0x7":
             continue
-        for t0, t1, t2 in zip(*[s.tasks[k] for k in CORE_SLOTS], strict=False):
+        slots = [s.tasks[k] for k in CORE_SLOTS]
+        if len({len(t) for t in slots}) != 1:
+            raise ValueError(f"submit {s.n}: cores have unequal task counts")
+        for t0, t1, t2 in zip(*slots, strict=True):
             diffs = []
             for w0, w1, w2 in zip(t0.cmd, t1.cmd, t2.cmd, strict=False):
                 if w0 != w1 or w0 != w2:
@@ -41,6 +46,9 @@ def diff_lines(path: Path) -> list[str]:
                 f" ndiff {len(diffs)}"
             )
             lines += [f"    {d}" for d in diffs]
+            if len({len(t0.cmd), len(t1.cmd), len(t2.cmd)}) != 1:
+                lens = (len(t0.cmd), len(t1.cmd), len(t2.cmd))
+                lines.append(f"    length differs: {lens}")
     return lines
 
 

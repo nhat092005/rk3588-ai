@@ -2,11 +2,11 @@
 
 The log has one SUBMIT line per submit ioctl. After it come, for each
 task, a TASK line and a CMD line with the register command words of the
-task. Known limits, kept from legacy-final:
-- npu_trace.c cuts a CMD line at 400 words, so a longer task (118 of
-  the 1.8 thousand elementwise tasks of trace_c012.log) is compared
-  only up to the cut.
-- A "CMD unmapped" line raises ValueError.
+task. A log made before the 400-word cut was removed from npu_trace.c
+(for example trace_c012.log) holds at most 400 words per task, so a
+longer task is compared only up to the cut. A "CMDCUT" line marks a task
+whose words run past its buffer. A "CMD unmapped" or "TASKOBJ unmapped"
+line raises ValueError.
 """
 
 import re
@@ -21,6 +21,7 @@ CORE_SLOTS = (2, 3, 4)
 # Register command word: target (16 bits), value (32 bits), register.
 TARGET_DPU = 0x1001
 DPU_DATA_CUBE_HEIGHT = 0x4034  # TRM Part1, RKNN_dpu_data_cube_height
+DPU_HEIGHT_MASK = 0x1FFF  # the height is bits 12:0 of the value
 
 _SUBMIT = re.compile(r"n=(\d+) core_mask=(0x[0-9a-f]+)")
 _TASK = re.compile(
@@ -54,6 +55,8 @@ def parse_trace(path: Path) -> list[Submit]:
     lines = path.read_text().splitlines()
     submits: list[Submit] = []
     for i, line in enumerate(lines):
+        if "unmapped" in line:
+            raise ValueError(f"{path}:{i + 1}: {line!r}, rerun the trace")
         if line.startswith("SUBMIT"):
             m = _SUBMIT.search(line)
             submits.append(Submit(int(m[1]), m[2]))
