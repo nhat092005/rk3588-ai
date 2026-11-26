@@ -13,7 +13,7 @@ class TrainConfig:
 
     # Model checkpoint name ("yolov8n.pt") or architecture YAML path.
     model: str
-    dataset: str  # Dataset identifier, e.g. "ppe5"
+    dataset: str  # Dataset folder under data/
     epochs: int
     imgsz: int = 640
     batch: int = 16

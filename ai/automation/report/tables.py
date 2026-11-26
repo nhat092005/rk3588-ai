@@ -217,14 +217,14 @@ def table_a(b: Builder) -> str:
     data = load_dataset_yaml(b.dataset)
     root = Path(data["path"])
     rows = []
-    for split in ("train", "val", "test"):
-        labels = sorted((root / "labels" / split).glob("*.txt"))
+    for split in ("train", "valid", "test"):
+        labels = sorted((root / split / "labels").glob("*.txt"))
         n_inst = sum(
             len([ln for ln in p.read_text().splitlines() if ln.strip()])
             for p in labels
         )
         rows.append([split, str(len(labels)), str(n_inst)])
-        rel_split = (root / "labels" / split).relative_to(REPO_ROOT)
+        rel_split = (root / split / "labels").relative_to(REPO_ROOT)
         b.cells.append(
             {
                 "table": "A",
@@ -251,12 +251,8 @@ def table_a(b: Builder) -> str:
         else:  # txt list
             stems = [Path(ln).stem for ln in split_path.read_text().split()]
         counts = [0] * len(CLASSES)
-        # images/<split> and labels/<split> share the split name.
-        label_dir = (
-            droot
-            / "labels"
-            / (split_path.name if split_path.is_dir() else "test")
-        )
+        # <split>/images and <split>/labels sit side by side.
+        label_dir = split_path.parent / "labels"
         for stem in stems:
             f = label_dir / f"{stem}.txt"
             for ln in f.read_text().splitlines() if f.exists() else []:
@@ -687,7 +683,7 @@ def table_g(b: Builder, runs: dict) -> str:
             f"# Table G. Latency Breakdown (ms): `{b.dataset}`",
             "",
             "NPU (tier 1) = median of 5 `eval_perf` calls; other columns "
-            "from tier 2 on the board (`css_test`, core_mask AUTO). "
+            "from tier 2 on the board (`ppe6_test`, core_mask AUTO). "
             "FPS_latency = 1000 / E2E mean.",
             "",
             md_table(

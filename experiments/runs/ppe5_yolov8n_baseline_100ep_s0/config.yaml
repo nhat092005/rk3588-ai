@@ -1,4 +1,0 @@
-dataset: ppe5
-model: yolov8n_baseline
-epochs: 100
-seed: 0

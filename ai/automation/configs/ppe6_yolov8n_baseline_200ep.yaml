@@ -1,4 +1,4 @@
-dataset: ppe5
+dataset: huang_cheng_ppe_6class_3050
 model: yolov8n_baseline
 epochs: 200
 seed: 0

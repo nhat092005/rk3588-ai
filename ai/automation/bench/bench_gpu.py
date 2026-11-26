@@ -1,7 +1,7 @@
 """CLI: reference latency of best.pt on the PC GPU (Table H, last row).
 
 Same pre/post-processing (rk3588_common.model_io), warmup, and single
-pass over css_test as the tier-2 board scripts; only the inference step
+pass over ppe6_test as the tier-2 board scripts; only the inference step
 runs on the GPU (PyTorch FP32, CUDA-synchronized).
 Writes runs/<run_id>/bench/gpu_pt_fp32.json.
 """
@@ -41,7 +41,7 @@ def main() -> None:
         str(weights), device=dev, fp16=False, fuse=True, verbose=False
     ).eval()
 
-    dataset, split = EVAL_SETS["css_test"]
+    dataset, split = EVAL_SETS["ppe6_test"]
     data = load_dataset_yaml(dataset)
     images = list_images(str(Path(data["path"]) / data[split]))
 

@@ -5,18 +5,18 @@ PC side of PPE detection on RK3588: datasets, training, export, evaluation, and 
 | Path | Content | Status |
 |---|---|---|
 | `ai/paths.py` | Every path of this repo (`data/`, `experiments/`, `results/`) | Migrated |
-| `ai/core/` | `dataset.py` (dataset.yaml lookup), `trainer.py` (Ultralytics train), `evaluator.py` (Evaluation Protocol v1), `backends.py` (PyTorch/ONNX, RKNN board dump), `provenance.py` (repo states of ai and common) | Migrated |
+| `ai/core/` | `dataset.py` (data.yaml lookup), `trainer.py` (Ultralytics train), `evaluator.py` (Evaluation Protocol v1), `backends.py` (PyTorch/ONNX, RKNN board dump), `provenance.py` (repo states of ai and common) | Migrated |
 | `ai/core/rknn/` | `baseline.py` (Ultralytics RKNN and ONNX export), `hybrid.py` (hybrid INT8 recipes, h5 standard), `calibration.py` (calibration sampling, letterboxed PNG through `rk3588_common.model_io.preprocess`), `benchmark.py` (tier-1 `eval_perf`/`eval_memory` from the PC) | Migrated |
 | `ai/models/` | One folder per model (`yolov8n_baseline`), see `ai/models/README.md` | Migrated |
-| `ai/automation/configs/` | Run configs (`ppe5_yolov8n_baseline`, `_200ep`) | Migrated |
+| `ai/automation/configs/` | Run configs (`ppe6_yolov8n_baseline`, `_200ep`) | Migrated |
 | `ai/automation/pipeline/` | `run` (train + protocol v1 eval + leaderboard), `evaluate` (pt, onnx, rknn on the board), `check_evaluator` (golden, crosscheck), `export_npu`, `complexity` | Migrated |
 | `ai/automation/report/`, `ai/automation/bench/` | `tables` (Tables A-M), `bench_gpu`, `benchmark_npu` (tier 1), `board_check` | Migrated |
 | `ai/board/` | Research harness that runs on the board: `bench/` (`bench_npu`, `bench_cpu_onnx`, `bench_throughput`, `WARMUP`), `probe/infer_dump` (NPU outputs for the evaluator), `probe/npu_trace.c` (LD_PRELOAD tracer of the RKNPU submit ioctl, build with `make build-npu-trace`), `probe/trace_run.py` (runs a .rknn under the tracer) | Migrated |
 | `ai/npu/latency/` | `trace_log`, `summarize`, `diff_cores`, `conv_split`: read the log of `npu_trace.c` (task kinds, rows per core, registers that differ between the 3 cores, how each conv is split) | Migrated |
 | `ai/research/`, `ai/npu/` (rest) | Research lines and NPU studies | Migrated on demand, closed ones stay in `legacy-final` |
-| `experiments/`, `results/` | Measurements produced by this repo. `experiments/runs/ppe5_yolov8n_baseline_100ep_s0` is imported from legacy (`imported.json`) | Migrated (baseline only) |
-| `data/` | Datasets (only `DATA_CARD.md` tracked): raw `css` and `ppe2286`, `ppe5` rebuilt by `make prepare-data DATASET=ppe5` | Migrated |
-| `scripts/` | `logtee.py` (command log with repo states), `data/prepare_ppe5.py` (ppe5 from css + ppe2286, relative links, no `path:` in dataset.yaml) | Migrated |
+| `experiments/`, `results/` | Measurements produced by this repo. The imported 5-class run and its leaderboard were removed on 2026-11-25 with the 5-class data | Migrated |
+| `data/` | Datasets (only `DATA_CARD.md` tracked): `huang_cheng_ppe_6class_3050` (6 classes, `data.yaml` in the folder, no prepare step) | Migrated |
+| `scripts/` | `logtee.py` (command log with repo states) | Migrated |
 | `tests/` | Equivalence tests against legacy fixtures | |
 | `Makefile` | Targets of this repo (`make help`), board settings from the meta-repo `board.mk` | Migrated |
 | `LEGACY.md` | Map of old experiment codes, code, data and runs that stayed in `legacy-final` | |
