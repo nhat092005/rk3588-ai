@@ -1,0 +1,5 @@
+# External model: trained outside this repo (YOLOv8s, 6 classes, imgsz 960,
+# train_args.data = huang_cheng_ppe6_final_3050). Not produced by trainer.py.
+dataset: huang_cheng_ppe_6class_3050
+model: yolov8s
+imgsz: 960

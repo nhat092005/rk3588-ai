@@ -1,4 +1,4 @@
-"""CLI: evaluate a run under Evaluation Protocol v1.
+"""CLI: evaluate a run under Evaluation Protocol v2.
 
 --backend pt/onnx run FP32 on the PC (GPU/CPU); rknn runs NPU inference
 on the board (ai.board.probe.infer_dump, RKNNLite), since PC-side
@@ -23,7 +23,7 @@ from ai.core.evaluator import (
 )
 from ai.core.provenance import board_repo_args
 from ai.paths import REPO_ROOT, RUNS_DIR
-from rk3588_common.model_io import EVAL_CONF
+from rk3588_common.model_io import EVAL_CONF, IMGSZ
 from rk3588_common.provenance import file_sha256
 
 
@@ -40,6 +40,7 @@ def board_dump(
     board: str,
     board_dir: str,
     suffix: str = "",
+    imgsz: int = IMGSZ,
 ) -> Path:
     """Copy model + images to board, run infer_dump, and copy dump back.
 
@@ -49,7 +50,7 @@ def board_dump(
     board_repo = f"{board_dir}/ai"
     rknn_dir = run_dir / "weights" / f"rknn_{precision}{suffix}"
     rel_run = run_dir.relative_to(REPO_ROOT)
-    loader, _ = build_eval_loader(eval_set)
+    loader, _ = build_eval_loader(eval_set, imgsz)
     images = [
         str(Path(p).relative_to(REPO_ROOT)) for p in loader.dataset.im_files
     ]
@@ -99,6 +100,7 @@ def board_dump(
             f"--model {remote_rknn} "
             f"--list {rel_run}/weights/{eval_set}.txt "
             f"--out {remote_dump} "
+            f"--imgsz {imgsz} "
             f"--run-id {run_dir.name} {repo_args}",
         ]
     )
@@ -146,6 +148,15 @@ def main() -> None:
         "--reuse-dump",
         action="store_true",
         help="rknn only: score local npu_dump again, no board access",
+    )
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        default=IMGSZ,
+        help=(
+            f"model input size, written into the result (default {IMGSZ}); "
+            "must be the size the model was exported for"
+        ),
     )
     parser.add_argument(
         "--variant",
@@ -196,7 +207,7 @@ def main() -> None:
         }
         for eval_set in eval_sets:
             save(
-                evaluate(backend, eval_set),
+                evaluate(backend, eval_set, imgsz=args.imgsz),
                 f"{args.backend}_fp32",
                 eval_set,
                 model_path,
@@ -226,12 +237,18 @@ def main() -> None:
                 args.board,
                 args.board_dir,
                 suffix,
+                args.imgsz,
             )
         )
         backend = RknnDumpBackend(dump, rknn_dir, EVAL_CONF)
         if backend.meta["model_sha256"] != file_sha256(rknn_path):
             raise ValueError("model on the board differs from the local .rknn")
-        result = evaluate(backend, eval_set)
+        dump_imgsz = backend.imgsz or IMGSZ  # no field: made at 640 (v1)
+        if dump_imgsz != args.imgsz:
+            raise ValueError(
+                f"dump made at imgsz {dump_imgsz}, evaluating at {args.imgsz}"
+            )
+        result = evaluate(backend, eval_set, imgsz=args.imgsz)
         if backend.rows:
             raise ValueError(
                 f"{len(backend.rows)} board images were not evaluated"

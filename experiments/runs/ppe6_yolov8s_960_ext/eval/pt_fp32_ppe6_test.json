@@ -1,0 +1,88 @@
+{
+  "protocol_version": "v2",
+  "protocol": {
+    "input": "LetterBox 960x960, rect=False, scaleup=False, center, pad 114",
+    "imgsz": 960,
+    "conf": 0.001,
+    "iou": 0.7,
+    "max_det": 300,
+    "multi_label": true
+  },
+  "repos": {
+    "ai": {
+      "commit": "d654403da884d61edafc29a605d5e5b91986dd73",
+      "dirty": false
+    },
+    "common": {
+      "commit": "844bb506f1a9534a43a0771885fb2ae4bfb60aab",
+      "dirty": false
+    }
+  },
+  "ultralytics_version": "8.4.154",
+  "torch_version": "2.4.0+cu124",
+  "eval_set": "ppe6_test",
+  "dataset": "huang_cheng_ppe_6class_3050",
+  "split": "test",
+  "n_images": 305,
+  "classes": [
+    "Helmet",
+    "NoHelmet",
+    "NoVest",
+    "Vest",
+    "RegularHat",
+    "Person"
+  ],
+  "dataset_fingerprint": "35e27f1100f8b555231b1acef3c12cb519cfa4ff4fd80d64da8bb9b83c87fca0",
+  "precision": 0.9425,
+  "recall": 0.9391,
+  "map50": 0.975,
+  "map50_95": 0.7304,
+  "per_class": {
+    "Helmet": {
+      "precision": 0.9475,
+      "recall": 0.9468,
+      "ap50": 0.9785,
+      "ap50_95": 0.7214,
+      "instances": 725
+    },
+    "NoHelmet": {
+      "precision": 0.9146,
+      "recall": 0.9038,
+      "ap50": 0.9561,
+      "ap50_95": 0.7163,
+      "instances": 291
+    },
+    "NoVest": {
+      "precision": 0.9432,
+      "recall": 0.927,
+      "ap50": 0.9727,
+      "ap50_95": 0.6736,
+      "instances": 932
+    },
+    "Vest": {
+      "precision": 0.9503,
+      "recall": 0.9365,
+      "ap50": 0.9719,
+      "ap50_95": 0.7467,
+      "instances": 470
+    },
+    "RegularHat": {
+      "precision": 0.9671,
+      "recall": 0.9569,
+      "ap50": 0.9885,
+      "ap50_95": 0.7697,
+      "instances": 511
+    },
+    "Person": {
+      "precision": 0.932,
+      "recall": 0.9635,
+      "ap50": 0.9824,
+      "ap50_95": 0.7547,
+      "instances": 1453
+    }
+  },
+  "run_id": "ppe6_yolov8s_960_ext",
+  "model_file": "weights/best.pt",
+  "model_sha256": "d1b60c592aa99a86dd8e47b27efafca84bbdf257adac32d3c98df2088fb2a660",
+  "backend": "pytorch"
+}

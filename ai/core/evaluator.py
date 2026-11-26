@@ -1,10 +1,11 @@
-"""Evaluation Protocol v1: one evaluator for every model and precision.
+"""Evaluation Protocol v2: one evaluator for every model and precision.
 
 Dataset loading, LetterBox, NMS, and AP come from the same Ultralytics
 code that model.val() uses, so FP32 (PyTorch/ONNX) and NPU
-(RKNN FP16/INT8) results differ only by the backend. Changing any
-constant below, or IMGSZ, requires a new PROTOCOL_VERSION (both in
-rk3588_common.model_io).
+(RKNN FP16/INT8) results differ only by the backend. The input size
+is a parameter of the protocol (imgsz, written into every result, v1
+fixed it at 640). Changing any constant below, or the default IMGSZ,
+requires a new PROTOCOL_VERSION (both in rk3588_common.model_io).
 """
 
 from __future__ import annotations
@@ -51,12 +52,14 @@ EVAL_SETS_BY_DATASET = {
     "huang_cheng_ppe_6class_3050": ["ppe6_test"],
 }
 
-# A backend maps a uint8 RGB NCHW batch (1, 3, IMGSZ, IMGSZ) and its
+# A backend maps a uint8 RGB NCHW batch (1, 3, imgsz, imgsz) and its
 # image path to raw predictions (1, 4 + nc, anchors) in input pixels.
 Backend = Callable[..., torch.Tensor]  # backend(img, im_file=...)
 
 
-def build_eval_loader(eval_set: str) -> tuple[DataLoader, dict[int, str]]:
+def build_eval_loader(
+    eval_set: str, imgsz: int = IMGSZ
+) -> tuple[DataLoader, dict[int, str]]:
     """Build deterministic Ultralytics val dataloader for eval_set."""
     dataset_name, split = EVAL_SETS[eval_set]
     data = load_dataset_yaml(dataset_name)
@@ -68,7 +71,7 @@ def build_eval_loader(eval_set: str) -> tuple[DataLoader, dict[int, str]]:
 
     cfg = get_cfg(
         DEFAULT_CFG,
-        {"imgsz": IMGSZ, "rect": False, "task": "detect", "mode": "val"},
+        {"imgsz": imgsz, "rect": False, "task": "detect", "mode": "val"},
     )
     dataset = build_yolo_dataset(cfg, img_path, 1, data, mode="val", stride=32)
     loader = build_dataloader(dataset, batch=1, workers=4, shuffle=False)
@@ -112,10 +115,13 @@ def match_predictions(
 
 
 def evaluate(
-    backend: Backend, eval_set: str, limit: int | None = None
+    backend: Backend,
+    eval_set: str,
+    limit: int | None = None,
+    imgsz: int = IMGSZ,
 ) -> dict:
-    """Run protocol v1 on eval_set and return JSON-serializable dict."""
-    loader, names = build_eval_loader(eval_set)
+    """Run protocol v2 at imgsz on eval_set; return a JSON dict."""
+    loader, names = build_eval_loader(eval_set, imgsz)
     metrics = DetMetrics(names=names)
     im_files, label_files = [], []
 
@@ -178,9 +184,10 @@ def evaluate(
         "protocol_version": PROTOCOL_VERSION,
         "protocol": {
             "input": (
-                f"LetterBox {IMGSZ}x{IMGSZ}, rect=False, "
+                f"LetterBox {imgsz}x{imgsz}, rect=False, "
                 "scaleup=False, center, pad 114"
             ),
+            "imgsz": imgsz,
             "conf": EVAL_CONF,
             "iou": EVAL_IOU,
             "max_det": EVAL_MAX_DET,

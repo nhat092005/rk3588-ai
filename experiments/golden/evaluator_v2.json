@@ -1,0 +1,86 @@
+{
+  "protocol_version": "v2",
+  "protocol": {
+    "input": "LetterBox 640x640, rect=False, scaleup=False, center, pad 114",
+    "imgsz": 640,
+    "conf": 0.001,
+    "iou": 0.7,
+    "max_det": 300,
+    "multi_label": true
+  },
+  "repos": {
+    "ai": {
+      "commit": "d654403da884d61edafc29a605d5e5b91986dd73",
+      "dirty": false
+    },
+    "common": {
+      "commit": "844bb506f1a9534a43a0771885fb2ae4bfb60aab",
+      "dirty": false
+    }
+  },
+  "ultralytics_version": "8.4.154",
+  "torch_version": "2.4.0+cu124",
+  "eval_set": "ppe6_test",
+  "dataset": "huang_cheng_ppe_6class_3050",
+  "split": "test",
+  "n_images": 305,
+  "classes": [
+    "Helmet",
+    "NoHelmet",
+    "NoVest",
+    "Vest",
+    "RegularHat",
+    "Person"
+  ],
+  "dataset_fingerprint": "35e27f1100f8b555231b1acef3c12cb519cfa4ff4fd80d64da8bb9b83c87fca0",
+  "precision": 0.0057,
+  "recall": 0.0482,
+  "map50": 0.0005,
+  "map50_95": 0.0002,
+  "per_class": {
+    "Helmet": {
+      "precision": 0.0105,
+      "recall": 0.2662,
+      "ap50": 0.0028,
+      "ap50_95": 0.001,
+      "instances": 725
+    },
+    "NoHelmet": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "ap50": 0.0,
+      "ap50_95": 0.0,
+      "instances": 291
+    },
+    "NoVest": {
+      "precision": 0.0011,
+      "recall": 0.0064,
+      "ap50": 0.0,
+      "ap50_95": 0.0,
+      "instances": 932
+    },
+    "Vest": {
+      "precision": 0.0038,
+      "recall": 0.0064,
+      "ap50": 0.0,
+      "ap50_95": 0.0,
+      "instances": 470
+    },
+    "RegularHat": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "ap50": 0.0,
+      "ap50_95": 0.0,
+      "instances": 511
+    },
+    "Person": {
+      "precision": 0.0187,
+      "recall": 0.0103,
+      "ap50": 0.0004,
+      "ap50_95": 0.0001,
+      "instances": 1453
+    }
+  },
+  "golden_weights": "yolov8n.pt",
+  "golden_weights_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36"
+}

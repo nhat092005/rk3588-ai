@@ -1,0 +1,94 @@
+{
+  "protocol_version": "v2",
+  "protocol": {
+    "input": "LetterBox 960x960, rect=False, scaleup=False, center, pad 114",
+    "imgsz": 960,
+    "conf": 0.001,
+    "iou": 0.7,
+    "max_det": 300,
+    "multi_label": true
+  },
+  "repos": {
+    "ai": {
+      "commit": "d654403da884d61edafc29a605d5e5b91986dd73",
+      "dirty": false
+    },
+    "common": {
+      "commit": "844bb506f1a9534a43a0771885fb2ae4bfb60aab",
+      "dirty": false
+    }
+  },
+  "ultralytics_version": "8.4.154",
+  "torch_version": "2.4.0+cu124",
+  "eval_set": "ppe6_test",
+  "dataset": "huang_cheng_ppe_6class_3050",
+  "split": "test",
+  "n_images": 305,
+  "classes": [
+    "Helmet",
+    "NoHelmet",
+    "NoVest",
+    "Vest",
+    "RegularHat",
+    "Person"
+  ],
+  "dataset_fingerprint": "35e27f1100f8b555231b1acef3c12cb519cfa4ff4fd80d64da8bb9b83c87fca0",
+  "precision": 0.7351,
+  "recall": 0.8623,
+  "map50": 0.7951,
+  "map50_95": 0.362,
+  "per_class": {
+    "Helmet": {
+      "precision": 0.7274,
+      "recall": 0.8414,
+      "ap50": 0.7873,
+      "ap50_95": 0.3486,
+      "instances": 725
+    },
+    "NoHelmet": {
+      "precision": 0.7052,
+      "recall": 0.7892,
+      "ap50": 0.7347,
+      "ap50_95": 0.3071,
+      "instances": 291
+    },
+    "NoVest": {
+      "precision": 0.8074,
+      "recall": 0.8755,
+      "ap50": 0.8517,
+      "ap50_95": 0.405,
+      "instances": 932
+    },
+    "Vest": {
+      "precision": 0.7742,
+      "recall": 0.8753,
+      "ap50": 0.8203,
+      "ap50_95": 0.3974,
+      "instances": 470
+    },
+    "RegularHat": {
+      "precision": 0.6639,
+      "recall": 0.8454,
+      "ap50": 0.7308,
+      "ap50_95": 0.2902,
+      "instances": 511
+    },
+    "Person": {
+      "precision": 0.7326,
+      "recall": 0.9468,
+      "ap50": 0.8457,
+      "ap50_95": 0.4239,
+      "instances": 1453
+    }
+  },
+  "run_id": "ppe6_yolov8s_960_ext",
+  "model_file": "weights/rknn_int8/ppe6-960-rk3588.rknn",
+  "model_sha256": "3bc7fe0187ae3a1689872e81bee130311c678b65cb969aa490ca02a8a95fb141",
+  "backend": "rknnlite-on-board",
+  "sdk_version": "==============================================\nRKNN VERSION:\n  API: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)\n  DRV: 0.9.8\n==============================================\n",
+  "board_dump": {
+    "created_at": "2026-11-26T22:21:39",
+    "kept_anchors": 65392,
+    "normalized_boxes": true
+  }
+}

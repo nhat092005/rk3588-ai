@@ -2,7 +2,7 @@
 
 For each image: evaluator-identical input, RKNNLite inference, and raw
 (4+nc, anchors) output. Keeps only anchors with best score > EVAL_CONF
-(lossless for protocol v1 at conf 0.001), plus each input's md5, checked
+(lossless for protocol v2 at conf 0.001), plus each input's md5, checked
 by the PC evaluator. Called by evaluate.py --backend rknn over ssh.
 """
 
@@ -17,7 +17,7 @@ import numpy as np
 import yaml
 
 from ai.board.bench.bench_npu import load_model
-from rk3588_common.model_io import EVAL_CONF, decode_split, preprocess
+from rk3588_common.model_io import EVAL_CONF, IMGSZ, decode_split, preprocess
 from rk3588_common.provenance import add_provenance_args, board_provenance
 
 
@@ -34,6 +34,12 @@ def main() -> None:
         help="text file, one image path per line",
     )
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        default=IMGSZ,
+        help="model input size, the evaluator's imgsz",
+    )
     add_provenance_args(parser)
     args = parser.parse_args()
 
@@ -48,13 +54,14 @@ def main() -> None:
     names, md5s, counts, idx, vals = [], [], [], [], []
     shape = None
     for path in images:
-        inp, _ = preprocess(cv2.imread(str(path)))
+        inp, _ = preprocess(cv2.imread(str(path)), args.imgsz)
         if split:
             raw = rknn.inference(inputs=[inp])
             t0 = time.perf_counter()
             out = decode_split(
                 np.asarray(raw[0], dtype=np.float32),
                 np.asarray(raw[1], dtype=np.float32),
+                args.imgsz,
             )[0]
             decode_s.append(time.perf_counter() - t0)
         else:
@@ -86,6 +93,7 @@ def main() -> None:
     meta = {
         **board_provenance(args, next(args.model.glob("*.rknn"))),
         "normalized_boxes": normalized,
+        "imgsz": args.imgsz,
         "eval_conf": EVAL_CONF,
         "n_images": len(names),
         "kept_anchors": int(sum(counts)),

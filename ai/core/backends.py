@@ -1,6 +1,6 @@
 """Inference backends for ai.core.evaluator.
 
-Each backend takes a uint8 RGB NCHW batch (1, 3, 640, 640), already
+Each backend takes a uint8 RGB NCHW batch (1, 3, imgsz, imgsz), already
 letterboxed by the evaluator, and returns raw predictions
 (1, 4 + nc, anchors) with xywh boxes in input pixels. NMS and metrics
 stay in the evaluator. The evaluator also passes im_file, used by
@@ -68,6 +68,7 @@ class RknnDumpBackend:
             (Path(rknn_model_dir) / "metadata.yaml").read_text()
         )
         self.normalized = boxes_normalized(meta)
+        self.imgsz = self.meta.get("imgsz")  # None: dump made at 640 (v1)
         # Every d[key] access re-reads the array from file: read once.
         with np.load(dump_path) as d:
             names, md5s, counts, idx, vals = (

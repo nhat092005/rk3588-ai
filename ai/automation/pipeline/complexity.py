@@ -27,12 +27,13 @@ def main() -> None:
     """Compute model params, GFLOPs, MACs, and file sizes for a run."""
     parser = argparse.ArgumentParser()
     parser.add_argument("run_id")
+    parser.add_argument("--imgsz", type=int, default=IMGSZ)
     args = parser.parse_args()
 
     run_dir = RUNS_DIR / args.run_id
     weights = run_dir / "weights"
     model = YOLO(weights / "best.pt").model.float().fuse()
-    gflops = get_flops(model, IMGSZ)
+    gflops = get_flops(model, args.imgsz)
     if gflops == 0:  # get_flops returns 0.0 silently when thop fails
         raise RuntimeError(
             "get_flops returned 0; check that ultralytics-thop is installed"
@@ -47,7 +48,7 @@ def main() -> None:
         "run_id": args.run_id,
         "protocol_version": PROTOCOL_VERSION,
         "repos": code_repos(),
-        "imgsz": IMGSZ,
+        "imgsz": args.imgsz,
         "fused": True,
         "params_m": round(get_num_params(model) / 1e6, 3),
         "gflops": round(gflops, 3),
