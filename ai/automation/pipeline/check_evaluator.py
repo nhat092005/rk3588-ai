@@ -1,8 +1,8 @@
-"""Lock Evaluation Protocol v1: golden test and model.val() check.
+"""Lock Evaluation Protocol v2: golden test and model.val() check.
 
 golden: evaluator must reproduce golden/evaluator_v1.json (--update
 rewrites it). crosscheck: evaluator vs model.val(rect=False); .pt files
-default to rect=True, but the NPU needs a fixed 640x640 input. Golden
+default to rect=True, but the NPU needs a fixed square input. Golden
 model: public yolov8n.pt, pinned by sha256.
 """
 
@@ -21,6 +21,7 @@ from ai.core.dataset import load_dataset_yaml
 from ai.core.evaluator import EVAL_SETS, PROTOCOL_VERSION, evaluate
 from ai.core.provenance import code_repos
 from ai.paths import GOLDEN_DIR, RUNS_DIR
+from rk3588_common.model_io import IMGSZ
 from rk3588_common.provenance import provenance
 
 GOLDEN_PATH = GOLDEN_DIR / f"evaluator_{PROTOCOL_VERSION}.json"
@@ -99,10 +100,16 @@ def golden(update: bool) -> int:
 
 
 def crosscheck(
-    weights: str, eval_set: str, device: str, out: Path | None = None
+    weights: str,
+    eval_set: str,
+    device: str,
+    out: Path | None = None,
+    imgsz: int = IMGSZ,
 ) -> int:
-    """Cross-check protocol v1 evaluator vs model.val(rect=False)."""
-    ours = evaluate(UltralyticsBackend(weights, device=device), eval_set)
+    """Cross-check protocol v2 evaluator vs model.val(rect=False)."""
+    ours = evaluate(
+        UltralyticsBackend(weights, device=device), eval_set, imgsz=imgsz
+    )
 
     dataset_name, split = EVAL_SETS[eval_set]
     data = load_dataset_yaml(dataset_name)
@@ -124,7 +131,7 @@ def crosscheck(
             .val(
                 data=str(tmp_yaml),
                 split="test",
-                imgsz=640,
+                imgsz=imgsz,
                 batch=1,
                 rect=False,
                 device=device,
@@ -162,6 +169,7 @@ def crosscheck(
     report = {
         **provenance(code_repos()),
         "weights": str(weights),
+        "imgsz": imgsz,
         "eval_set": eval_set,
         "tolerance": CROSSCHECK_TOLERANCE,
         "passed": not errors,
@@ -205,6 +213,7 @@ def main() -> None:
         "--eval-set", default=GOLDEN_EVAL_SET, choices=list(EVAL_SETS)
     )
     c.add_argument("--device", default="0")
+    c.add_argument("--imgsz", type=int, default=IMGSZ)
     args = parser.parse_args()
     if args.cmd == "golden":
         sys.exit(golden(args.update))
@@ -215,7 +224,9 @@ def main() -> None:
             str(run_dir / "weights" / "best.pt"),
             run_dir / "eval" / f"crosscheck_{args.eval_set}.json",
         )
-    sys.exit(crosscheck(args.weights, args.eval_set, args.device, out))
+    sys.exit(
+        crosscheck(args.weights, args.eval_set, args.device, out, args.imgsz)
+    )
 
 
 if __name__ == "__main__":

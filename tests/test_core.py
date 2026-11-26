@@ -56,15 +56,18 @@ def test_rknn_dump_backend_rejects_other_input(tmp_path):
 
 
 def test_protocol_constants():
+    # The legacy fixture holds protocol v1. v2 makes the input size a
+    # parameter, every other constant is unchanged.
     got = [
-        evaluator.PROTOCOL_VERSION,
         evaluator.IMGSZ,
         evaluator.EVAL_CONF,
         evaluator.EVAL_IOU,
         evaluator.EVAL_MAX_DET,
         evaluator.MAX_TIME_IMG,
     ]
-    assert np.array_equal(np.array(got, dtype=str), EXPECTED["constants"])
+    assert np.array_equal(np.array(got, dtype=str), EXPECTED["constants"][1:])
+    assert str(EXPECTED["constants"][0]) == "v1"
+    assert evaluator.PROTOCOL_VERSION == "v2"
     assert np.array_equal(
         evaluator.IOU_THRESHOLDS.numpy(), EXPECTED["iou_thresholds"]
     )
