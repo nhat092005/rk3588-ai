@@ -39,21 +39,16 @@ EVAL_MAX_DET = 300
 MAX_TIME_IMG = 60.0
 IOU_THRESHOLDS = torch.linspace(0.5, 0.95, 10)
 
-# eval set name -> (prepared dataset, split key in its dataset.yaml)
+# eval set name -> (dataset folder in data/, split key in its data.yaml)
 EVAL_SETS = {
-    "css_test": (
-        "ppe5",
+    "ppe6_test": (
+        "huang_cheng_ppe_6class_3050",
         "test",
-    ),  # common test set for every model (82 images, CSS v28 test split)
-    "ppe2286_ext": (
-        "ppe5",
-        "test_ext",
-    ),  # external test set (180 ppe2286 images, Person is a pseudo-label)
+    ),  # common test set for every model (305 images)
 }
-# Eval sets reported for a model trained on each dataset. ppe5_plus,
-# ppe2286, ppe4 and their eval sets stay in legacy-final until migrated.
+# Eval sets reported for a model trained on each dataset.
 EVAL_SETS_BY_DATASET = {
-    "ppe5": ["css_test", "ppe2286_ext"],
+    "huang_cheng_ppe_6class_3050": ["ppe6_test"],
 }
 
 # A backend maps a uint8 RGB NCHW batch (1, 3, IMGSZ, IMGSZ) and its
@@ -66,10 +61,7 @@ def build_eval_loader(eval_set: str) -> tuple[DataLoader, dict[int, str]]:
     dataset_name, split = EVAL_SETS[eval_set]
     data = load_dataset_yaml(dataset_name)
     if split not in data:
-        raise KeyError(
-            f"{dataset_name} dataset.yaml has no '{split}' key; "
-            f"re-run scripts/data/prepare_{dataset_name}.py"
-        )
+        raise KeyError(f"data/{dataset_name}/data.yaml has no '{split}' key")
     img_path = str(Path(data["path"]) / data[split])
     data["names"] = dict(enumerate(data["names"]))
     data["channels"] = 3

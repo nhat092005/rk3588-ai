@@ -1,7 +1,7 @@
 """Tests for ai.core against legacy-final fixtures.
 
-Full evaluation (evaluate() on css_test) is checked against the legacy
-leaderboard once the data is migrated.
+Full evaluation (evaluate() on ppe6_test) is covered by the golden test
+(make golden-test).
 """
 
 import cases
@@ -73,12 +73,11 @@ def test_protocol_constants():
 
 
 def test_eval_sets():
-    got = [
-        f"{k}={evaluator.EVAL_SETS[k]}" for k in ("css_test", "ppe2286_ext")
-    ]
-    assert got == list(EXPECTED["eval_sets"])
+    assert evaluator.EVAL_SETS == {
+        "ppe6_test": ("huang_cheng_ppe_6class_3050", "test")
+    }
     assert evaluator.EVAL_SETS_BY_DATASET == {
-        "ppe5": list(EXPECTED["eval_sets_ppe5"])
+        "huang_cheng_ppe_6class_3050": ["ppe6_test"]
     }
 
 

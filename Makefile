@@ -2,7 +2,7 @@
 # Board settings (BOARD, BOARD_DIR, DEVICE) come from the meta-repo board.mk. Ported from legacy-final:Makefile.
 .PHONY: help test train evaluate golden-test golden-update crosscheck export-npu complexity tables bench-gpu \
 	benchmark-npu build-npu-trace sync-board board-check bench-board bench-board-cpu bench-board-throughput \
-	leaderboard prepare-data
+	leaderboard
 
 include ../board.mk
 
@@ -10,7 +10,7 @@ PY           := ../.venv/bin/python
 LOGTEE       := $(PY) scripts/logtee.py
 RUN_DIR       = experiments/runs/$(RUN)
 CORE_MASK    ?= AUTO
-BOARD_IMAGES ?= data/ppe5/processed/images/test
+BOARD_IMAGES ?= data/huang_cheng_ppe_6class_3050/test/images
 comma        := ,
 # Ultralytics must not pip-install into the venv (it silently changed onnx/onnxslim before); only make sync changes it
 export YOLO_AUTOINSTALL = False
@@ -38,7 +38,7 @@ help:
 	@echo "  make bench-board-throughput RUN=<id> PREC=<p> CORE_MASKS=CORE_0,CORE_1,CORE_2"
 	@echo "  make build-npu-trace           build the LD_PRELOAD submit tracer on the board (after sync-board)"
 	@echo "Data and utilities:"
-	@echo "  make prepare-data DATASET=ppe5 | leaderboard DATASET=<ds> | test"
+	@echo "  make leaderboard DATASET=<ds> | test"
 
 test:
 	$(PY) -m pytest -q tests
@@ -61,7 +61,7 @@ crosscheck:
 	$(LOGTEE) $(if $(RUN),$(RUN_DIR)/logs/crosscheck,experiments/golden/logs/crosscheck) -- $(PY) -m ai.automation.pipeline.check_evaluator crosscheck $(if $(WEIGHTS),--weights $(WEIGHTS)) $(if $(RUN),--run-id $(RUN))
 
 export-npu:
-	RKNN_LOG_LEVEL=3 $(LOGTEE) $(RUN_DIR)/logs/export_$(PREC) -- $(PY) -m ai.automation.pipeline.export_npu $(RUN) --quantize $(if $(filter fp16,$(PREC)),16,8)$(if $(filter int8h5,$(PREC)), --recipe h5 --calib-from $(or $(CALIB_FROM),ppe5_yolov8n_baseline_100ep_s0))$(if $(and $(filter int8,$(PREC)),$(CALIB_FROM)), --calib-from $(CALIB_FROM))
+	RKNN_LOG_LEVEL=3 $(LOGTEE) $(RUN_DIR)/logs/export_$(PREC) -- $(PY) -m ai.automation.pipeline.export_npu $(RUN) --quantize $(if $(filter fp16,$(PREC)),16,8)$(if $(filter int8h5,$(PREC)), --recipe h5 --calib-from $(CALIB_FROM))$(if $(and $(filter int8,$(PREC)),$(CALIB_FROM)), --calib-from $(CALIB_FROM))
 
 complexity:
 	$(LOGTEE) $(RUN_DIR)/logs/complexity -- $(PY) -m ai.automation.pipeline.complexity $(RUN)
@@ -106,6 +106,3 @@ bench-board-throughput:
 
 leaderboard:
 	cat experiments/leaderboards/$(DATASET).csv
-
-prepare-data:
-	$(PY) -m scripts.data.prepare_$(DATASET)

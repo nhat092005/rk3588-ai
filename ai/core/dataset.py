@@ -1,4 +1,4 @@
-"""Resolve and read dataset.yaml files produced by prepare_<name>.py."""
+"""Resolve and read the data.yaml of a dataset folder under data/."""
 
 from pathlib import Path
 
@@ -8,17 +8,17 @@ from ai.paths import DATA_DIR
 
 
 def dataset_yaml_path(name: str) -> Path:
-    """Return path to processed dataset.yaml, raising if missing."""
-    path = DATA_DIR / name / "processed" / "dataset.yaml"
+    """Return path to data/<name>/data.yaml, raising if missing."""
+    path = DATA_DIR / name / "data.yaml"
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} does not exist. Run scripts/data/prepare_{name}.py first."
+            f"{path} does not exist. Put the dataset folder in data/."
         )
     return path
 
 
 def load_dataset_yaml(name: str) -> dict:
-    """Load dataset.yaml with "path" set to the absolute dataset root.
+    """Load data.yaml with "path" set to the absolute dataset root.
 
     The files have no "path" key (no absolute path in the repo), so the
     root is the yaml's directory, like Ultralytics check_det_dataset.

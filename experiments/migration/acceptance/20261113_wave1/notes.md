@@ -21,3 +21,5 @@ interpreter and code, legacy calibration PNGs, legacy `best.onnx`) was read from
 | 6 | Leaderboard | `experiments/leaderboards/ppe5.csv`: two rows from check 1, values equal the legacy rows |
 
 Tier 1 (adb, `rknn_server`) was not part of the acceptance.
+
+On 2026-11-25 the 5-class data, the run `ppe5_yolov8n_baseline_100ep_s0`, its leaderboard and the `legacy_calib_rknn_int8_*.json` files of check 2e were removed from this repo (replaced by the 6-class dataset). The table above is kept as the record of the migration.

@@ -25,7 +25,7 @@ from rk3588_common.provenance import provenance
 
 GOLDEN_PATH = GOLDEN_DIR / f"evaluator_{PROTOCOL_VERSION}.json"
 GOLDEN_WEIGHTS = "yolov8n.pt"
-GOLDEN_EVAL_SET = "css_test"
+GOLDEN_EVAL_SET = "ppe6_test"
 # CPU kernels are deterministic; GPU results may differ in 4th decimal
 GOLDEN_DEVICE = "cpu"
 TOLERANCE = 5e-4  # max |difference| allowed on any metric

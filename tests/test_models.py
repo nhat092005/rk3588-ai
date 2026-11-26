@@ -13,8 +13,8 @@ CONFIGS = sorted((REPO_ROOT / "ai" / "automation" / "configs").glob("*.yaml"))
 
 def test_configs_exist():
     assert {p.stem for p in CONFIGS} >= {
-        "ppe5_yolov8n_baseline",
-        "ppe5_yolov8n_baseline_200ep",
+        "ppe6_yolov8n_baseline",
+        "ppe6_yolov8n_baseline_200ep",
     }
 
 

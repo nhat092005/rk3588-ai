@@ -45,9 +45,9 @@ Moved elsewhere: `ai/board/common.py` and `ai/board/split_decode.py` to `rk3588_
 
 | Legacy | Here |
 |---|---|
-| `data/css/raw`, `data/ppe2286/raw`, data cards of css, ppe2286, ppe5 | Copied unchanged (`ppe2286` card notes what was not migrated) |
-| `data/ppe5/processed` | Rebuilt by `make prepare-data DATASET=ppe5`: labels byte-identical, fingerprints of `css_test` and `ppe2286_ext` equal to legacy, relative links, no `path:` |
+| `data/css/raw`, `data/ppe2286/raw`, data cards of css, ppe2286, ppe5 | Copied unchanged, removed from this repo on 2026-11-25 (replaced by `data/huang_cheng_ppe_6class_3050`) |
+| `data/ppe5/processed` | Rebuilt by the removed `make prepare-data DATASET=ppe5` (removed on 2026-11-25): labels byte-identical, fingerprints of `css_test` and `ppe2286_ext` equal to legacy, relative links, no `path:` |
 | `data/ppe2286/processed`, `data/ppe4`, `data/ppe5_plus`, `data/demo` | Not migrated |
-| `experiments/runs/ppe5_yolov8n_baseline_100ep_s0` | `best.pt`, `config.yaml`, `args.yaml` (paths made relative), `metrics.csv`, with `imported.json` (sha256 of the legacy files) |
+| `experiments/runs/ppe5_yolov8n_baseline_100ep_s0` | `best.pt`, `config.yaml`, `args.yaml` (paths made relative), `metrics.csv`, with `imported.json` (sha256 of the legacy files). Removed from this repo on 2026-11-25 |
 | the other 33 runs, `experiments/leaderboards/`, `experiments/golden/` | Not migrated; the leaderboard starts empty |
 | `experiments/index.csv`, `ai/core/provenance.py:log_experiment` | Dropped: it repeated what the experiment directory and the provenance of its result files already hold (meta-repo `STANDARDS.md`, section 3) |

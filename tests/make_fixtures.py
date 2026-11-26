@@ -65,10 +65,6 @@ def main() -> None:
             out[f"dump_q{quantize}_s{int(split)}"] = backend(
                 img, im_file="images/x.jpg"
             ).numpy()
-    out["eval_sets"] = np.array(
-        [f"{k}={old.EVAL_SETS[k]}" for k in ("css_test", "ppe2286_ext")]
-    )
-    out["eval_sets_ppe5"] = np.array(old.EVAL_SETS_BY_DATASET["ppe5"])
     out["constants"] = np.array(
         [
             old.PROTOCOL_VERSION,

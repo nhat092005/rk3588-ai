@@ -8,7 +8,6 @@ runs/<run_id>/export_<precision>.json.
 import argparse
 import hashlib
 import json
-import os
 import shutil
 from importlib.metadata import version
 from pathlib import Path
@@ -36,11 +35,7 @@ def build_calibration(dataset: str, out_dir: Path) -> dict:
     """Sample and write letterboxed calibration PNGs for dataset."""
     data = load_dataset_yaml(dataset)
     images_dir = Path(data["path"]) / data["train"]
-    labels_dir = Path(
-        str(images_dir).replace(
-            f"{os.sep}images{os.sep}", f"{os.sep}labels{os.sep}"
-        )
-    )
+    labels_dir = images_dir.parent / "labels"
     stems = sorted(
         sample_calibration_images(
             labels_dir,
